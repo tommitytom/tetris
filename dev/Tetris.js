@@ -1,13 +1,9 @@
 import * as Util from './Util';
 import Types from './Types';
 
-const FALL_SPEED_SCORE = 6;
-
 export default class Tetris {
 	constructor(w, h) {
 		this._size = { w: w, h: h };
-		this._fallRate = 2; // Rows per second
-		this._restrictHold = false;
 		this.reset();
 	}
 
@@ -49,6 +45,9 @@ export default class Tetris {
 
 		this._fallMult = 1;
 		this._fallDelta = 0;
+		this._fallRate = 2; // Rows per second
+		this._restrictHold = false;
+		
 		this._updateGhost();
 	}
 
