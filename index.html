@@ -2,22 +2,23 @@
 <html>
 <head>
 	<title>Tetris</title>
-	<script type="text/javascript" src="dist/tetris-latest.js"></script>
+	<!-- build:cssInline -->
+	<link rel="stylesheet" type="text/css" href="tetris.css">
+	<!-- endbuild -->
+	<!-- build:jsInline -->
+	<script type="text/javascript" src="dist/tetris.js"></script>
+	<!-- endbuild -->
 </head>
 <body>
 	<canvas id="tetris" width="96" height="192"></canvas>
-	<div id="state">
-		<p>Arrow keys + space!</p>
-		<p><span id="status">Idle</span>
-		<p>Score: <span id="score">0</span></p>
-		<p>Level: <span id="level">1</span></p>
-	</div>
-	<script type="text/javascript">;
-		var renderer = new TetrisCanvasRenderer('tetris', 12, 24);
-		var controller = new KeyboardController('tetris');
-		var listener = new StateListener('state');
-		var tetris = new TetrisApp(renderer, controller, listener);
-		tetris.run();
-	</script>
+	<p class="instructions">
+		Left: Move left<br />
+		Right: Move right<br />
+		Up: Rotate<br />
+		Down: Soft drop<br />
+		Space: Hard drop<br />
+		Z: Hold<br />
+		R: Reset
+	</p>
 </body>
 </html>

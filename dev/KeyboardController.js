@@ -1,12 +1,14 @@
 const COMMAND_MAP = {
-	'ArrowLeft': 'MoveLeft',
-	'ArrowRight': 'MoveRight',
-	'ArrowUp': 'Rotate',
-	'ArrowDown': 'IncreaseFallRate',
-	'Space': 'Drop'
+	'ArrowLeft': 	'MoveLeft',
+	'ArrowRight': 	'MoveRight',
+	'ArrowUp': 		'Rotate',
+	'ArrowDown': 	'IncreaseFallRate',
+	'Space': 		'Drop',
+	'KeyZ': 		'Hold',
+	'KeyR': 		'Reset'
 };
 
-export default class KeyboardEventListener {
+export default class KeyboardController {
 	constructor(element) {
 		this._element = document.getElementById(element);
 		this._listener = null;

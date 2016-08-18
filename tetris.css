@@ -1,0 +1,13 @@
+@font-face {
+	font-family: mainFont;
+	src: url(prstartk.ttf);
+}
+
+html, body {
+	background-color:black;
+}
+
+.instructions {
+	font-family: mainFont;
+	color: white;
+}

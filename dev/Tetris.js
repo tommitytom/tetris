@@ -1,72 +1,13 @@
 import * as Util from './Util';
+import Types from './Types';
 
-const TETROMINO_TYPES = [
-	{
-		w: 2, h: 2,
-		color: 'yellow',
-		data: [
-			1, 1,
-			1, 1
-		]
-	},
-	{
-		w: 3, h: 2,
-		color: 'green',
-		data: [
-			0, 1, 0,
-			1, 1, 1
-		]
-	},
-	{
-		w: 3, h: 2,
-		color: 'red',
-		data: [
-			1, 1, 0,
-			0, 1, 1
-		]
-	},
-	{
-		w: 3, h: 2,
-		color: 'blue',
-		data: [
-			0, 1, 1,
-			1, 1, 0
-		]
-	},
-	{
-		w: 2, h: 3,
-		color: 'purple',
-		data: [
-			1, 1,
-			1, 0,
-			1, 0,
-		]
-	},
-	{
-		w: 2, h: 3,
-		color: 'orange',
-		data: [
-			1, 1,
-			0, 1,
-			0, 1,
-		]
-	},
-	{
-		w: 1, h: 4,
-		color: '#ff00bf',
-		data: [
-			1,
-			1,
-			1,
-			1
-		]
-	}
-];
+const FALL_SPEED_SCORE = 6;
 
 export default class Tetris {
 	constructor(w, h) {
 		this._size = { w: w, h: h };
 		this._fallRate = 2; // Rows per second
+		this._restrictHold = false;
 		this.reset();
 	}
 
@@ -74,11 +15,11 @@ export default class Tetris {
 		return this._state;
 	}
 
-	get fallRate() {
+	get fallRateMultiplier() {
 		return this._fallMult;
 	}
 
-	set fallRate(value) {
+	set fallRateMultiplier(value) {
 		this._fallMult = value;
 	}
 
@@ -94,7 +35,10 @@ export default class Tetris {
 		this._state = {
 			grid: [],
 			falling: this._generateTetromino(),
-			playing: false,
+			next: this._generateTetromino(),
+			held: null,
+			playing: true,
+			lines: 0,
 			score: 0,
 			level: 1
 		};
@@ -109,6 +53,10 @@ export default class Tetris {
 	}
 
 	moveLeft() {
+		if (this._state.playing === false) {
+			return;
+		}
+
 		let t = this._state.falling;
 		if (t.pos.x > 0) {
 			if (!this._collides(t.type, t.pos.x - 1, t.pos.y)) {
@@ -119,6 +67,10 @@ export default class Tetris {
 	}
 
 	moveRight() {
+		if (this._state.playing === false) {
+			return;
+		}
+
 		let t = this._state.falling;
 		if (t.pos.x + t.type.w < this._size.w) {
 			if (!this._collides(t.type, t.pos.x + 1, t.pos.y)) {
@@ -129,13 +81,22 @@ export default class Tetris {
 	}
 
 	drop() {
+		if (this._state.playing === false) {
+			return;
+		}
+
 		let t = this._state.falling;
+		this._state.score += t.collisionPoint - t.pos.y;
 		t.pos.y = t.collisionPoint;
 		this._handleCollision();
 		this._fallDelta = 0;
 	}
 
 	rotate() {
+		if (this._state.playing === false) {
+			return;
+		}
+
 		let t = this._state.falling;
 		let type = {
 			w: t.type.h,
@@ -163,42 +124,38 @@ export default class Tetris {
 		this._updateGhost();
 	}
 
+	hold() {
+		if (this._state.playing === false || this._restrictHold === true) {
+			return;
+		}
+
+		let held = this._state.held,
+			falling = this._state.falling;
+
+		if (held) {
+			this._state.falling = held;
+		} else {
+			this._state.falling = this._state.next;
+			this._state.next = this._generateTetromino();
+		}
+
+		falling.pos.y = -falling.type.h;
+		this._state.held = falling;
+		this._restrictHold = true;
+
+		this._updateGhost();
+	}
+
 	update(delta) {
 		if (this._state.playing === false) {
 			return;
 		}
 
 		this._fallDelta += delta * this._fallMult * this._fallRate;
-
 		if (this._fallDelta > 1) {
 			this._updateFalling();
 			this._fallDelta %= 1;
 		}
-	}
-
-	_collides(t, xOff, yOff) {
-		let bottom = yOff + t.h;
-		if (bottom > this._size.h) {
-			return true;
-		}
-
-		for (let y = 0; y < t.h; y++) {
-			if (yOff + y >= 0) {
-				for (let x = 0; x < t.w; x++) {
-					let blockIdx = Util.getArrayIdx(x, y, t.w),
-						block = t.data[blockIdx];
-
-					if (block !== 0) {
-						let gridIdx = Util.getArrayIdx(xOff + x, yOff + y, this._size.w);
-						if (this._state.grid[gridIdx] !== 0) {
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		return false;
 	}
 
 	_updateFalling() {
@@ -214,6 +171,50 @@ export default class Tetris {
 			}
 		}
 
+		if (this._fallMult > 1) {
+			this._state.score++;
+		}
+
+		this._updateGhost();
+	}
+
+	_collides(t, xOff, yOff) {
+		if (yOff + t.h > this._size.h) {
+			return true;
+		}
+
+		for (let y = 0; y < t.h; y++) {
+			let gridY = yOff + y;
+			if (gridY >= 0) {
+				for (let x = 0; x < t.w; x++) {
+					let blockIdx = Util.getArrayIdx(x, y, t.w),
+						block = t.data[blockIdx];
+
+					if (block !== 0) {
+						let gridIdx = Util.getArrayIdx(xOff + x, gridY, this._size.w);
+						if (this._state.grid[gridIdx] !== 0) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	_handleCollision() {
+		this._bake(this._state.falling);
+		
+		if (this._state.falling.pos.y >= 0) {
+			this._removeCompleted();
+		} else {
+			this.stop();
+		}
+
+		this._state.falling = this._state.next;
+		this._state.next = this._generateTetromino();
+		this._restrictHold = false;
 		this._updateGhost();
 	}
 
@@ -228,21 +229,9 @@ export default class Tetris {
 		t.collisionPoint = t.pos.y + rows;
 	}
 
-	_handleCollision() {
-		this._bake(this._state.falling);
-		
-		if (this._state.falling.pos.y >= 0) {
-			this._removeCompleted();
-		} else {
-			this.stop();
-		}
-
-		this._state.falling = this._generateTetromino();
-		this._updateGhost();
-	}
-
+	// Remove all complete lines
 	_removeCompleted() {
-		let updated = true;
+		let removeCount = 0;
 		for (let y = this._size.h - 1; y > 0; y--) {
 			let complete = true;
 			for (let x = 0; x < this._size.w; x++) {
@@ -255,19 +244,29 @@ export default class Tetris {
 
 			if (complete) {
 				this._shiftRows(y);
-				this._state.score++;
-				this._state.level = Math.floor(this._state.score / 10) + 1;
-				this._fallRate = this._state.level;
-				updated = true;
+				removeCount++;
 				y++;
 			}
 		}
 
-		if (updated) {
+		if (removeCount > 0) {
+			this._state.lines += removeCount;
+			this._state.level = Math.floor(this._state.lines / 10) + 1;
+
+			let score = 100;
+			switch (removeCount) {
+				case 2: score = 300; break;
+				case 3: score = 400; break;
+				case 4: score = 500; break;
+			}
+
+			this._state.score += score * this._state.level;
+			this._fallRate = this._state.level;
 			this._updateGhost();
 		}
 	}
 
+	// Shift rows down from the specified row index
 	_shiftRows(idx) {
 		let grid = this._state.grid;
 		for (let y = idx; y > 1; y--) {
@@ -282,6 +281,7 @@ export default class Tetris {
 		}
 	}
 
+	// Bakes the currently falling tetromino in to the grid
 	_bake(t) {
 		for (let y = 0; y < t.type.h; y++) {
 			for (let x = 0; x < t.type.w; ++x) {
@@ -295,8 +295,8 @@ export default class Tetris {
 	}
 
 	_generateTetromino() {
-		let idx = Math.floor(Math.random() * (TETROMINO_TYPES.length - 0.00001)),
-			type = TETROMINO_TYPES[idx];
+		let idx = Math.floor(Math.random() * (Types.length - 0.00001)),
+			type = Types[idx];
 
 		return {
 			type: Util.deepClone(type),
