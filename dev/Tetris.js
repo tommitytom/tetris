@@ -96,7 +96,7 @@ export default class Tetris {
 		}
 
 		let t = this._state.falling;
-		this._state.score += t.collisionPoint - t.pos.y;
+		this._state.score += (t.collisionPoint - t.pos.y) * this._state.level;
 		t.pos.y = t.collisionPoint;
 		this._handleCollision();
 		this._fallDelta = 0;
@@ -186,7 +186,7 @@ export default class Tetris {
 		}
 
 		if (this._fallMult > 1) {
-			this._state.score++;
+			this._state.score += this._state.level;
 		}
 
 		this._updateCollisionPoint();
