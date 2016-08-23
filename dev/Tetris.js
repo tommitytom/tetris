@@ -1,32 +1,40 @@
 import * as Util from './Util';
 import Types from './Types';
 
+const LINE_SCORES = [ 100, 300, 400, 500 ];
+
 export default class Tetris {
 	constructor(w, h) {
 		this._size = { w: w, h: h };
 		this.reset();
 	}
 
+	// Gets the current game state.
 	get state() {
 		return this._state;
 	}
 
+	// Gets the multiplier applied to the fall rate.
 	get fallRateMultiplier() {
 		return this._fallMult;
 	}
 
+	// Sets the multiplier applied to the fall rate.
 	set fallRateMultiplier(value) {
 		this._fallMult = value;
 	}
 
+	// Starts/resumes the game.
 	start() {
 		this._state.playing = true;
 	}
 
+	// Stops/pauses the game.
 	stop() {
 		this._state.playing = false;
 	}
 
+	// Resets then game to its initial state.
 	reset() {
 		this._state = {
 			grid: [],
@@ -47,10 +55,11 @@ export default class Tetris {
 		this._fallDelta = 0;
 		this._fallRate = 2; // Rows per second
 		this._restrictHold = false;
-		
-		this._updateGhost();
+
+		this._updateCollisionPoint();
 	}
 
+	// Moves the current tetromino to the left by 1 space.
 	moveLeft() {
 		if (this._state.playing === false) {
 			return;
@@ -60,11 +69,12 @@ export default class Tetris {
 		if (t.pos.x > 0) {
 			if (!this._collides(t.type, t.pos.x - 1, t.pos.y)) {
 				t.pos.x--;
-				this._updateGhost();
+				this._updateCollisionPoint();
 			}
 		}
 	}
 
+	// Moves the current tetromino to the right by 1 space.
 	moveRight() {
 		if (this._state.playing === false) {
 			return;
@@ -74,11 +84,12 @@ export default class Tetris {
 		if (t.pos.x + t.type.w < this._size.w) {
 			if (!this._collides(t.type, t.pos.x + 1, t.pos.y)) {
 				t.pos.x++;
-				this._updateGhost();
+				this._updateCollisionPoint();
 			}
 		}
 	}
 
+	// Drops the current tetromino (hard drop).
 	drop() {
 		if (this._state.playing === false) {
 			return;
@@ -91,6 +102,7 @@ export default class Tetris {
 		this._fallDelta = 0;
 	}
 
+	// Rotates the current tetromino 90 degrees clockwise.
 	rotate() {
 		if (this._state.playing === false) {
 			return;
@@ -120,9 +132,10 @@ export default class Tetris {
 			t.type = type;
 		}
 
-		this._updateGhost();
+		this._updateCollisionPoint();
 	}
 
+	// Holds the current tetromino for later use.  Also recalls the last held piece.
 	hold() {
 		if (this._state.playing === false || this._restrictHold === true) {
 			return;
@@ -142,9 +155,10 @@ export default class Tetris {
 		this._state.held = falling;
 		this._restrictHold = true;
 
-		this._updateGhost();
+		this._updateCollisionPoint();
 	}
 
+	// Updates the game - called every frame.
 	update(delta) {
 		if (this._state.playing === false) {
 			return;
@@ -157,6 +171,7 @@ export default class Tetris {
 		}
 	}
 
+	// Updates the currently falling tetromino.
 	_updateFalling() {
 		let t = this._state.falling,
 			fallCount = Math.floor(this._fallDelta);
@@ -174,9 +189,11 @@ export default class Tetris {
 			this._state.score++;
 		}
 
-		this._updateGhost();
+		this._updateCollisionPoint();
 	}
 
+	// Checks to see if the tetromino type will collide with any 
+	// others on the grid at the specified position.
 	_collides(t, xOff, yOff) {
 		if (yOff + t.h > this._size.h) {
 			return true;
@@ -202,6 +219,7 @@ export default class Tetris {
 		return false;
 	}
 
+	// Handles a collision between the current tetromino and the grid.
 	_handleCollision() {
 		this._bake(this._state.falling);
 		
@@ -214,10 +232,11 @@ export default class Tetris {
 		this._state.falling = this._state.next;
 		this._state.next = this._generateTetromino();
 		this._restrictHold = false;
-		this._updateGhost();
+		this._updateCollisionPoint();
 	}
 
-	_updateGhost() {
+	// Updates the point at which the current tetromino will collide with the grid.
+	_updateCollisionPoint() {
 		let t = this._state.falling,
 			rows = 0;
 
@@ -251,17 +270,9 @@ export default class Tetris {
 		if (removeCount > 0) {
 			this._state.lines += removeCount;
 			this._state.level = Math.floor(this._state.lines / 10) + 1;
-
-			let score = 100;
-			switch (removeCount) {
-				case 2: score = 300; break;
-				case 3: score = 400; break;
-				case 4: score = 500; break;
-			}
-
-			this._state.score += score * this._state.level;
+			this._state.score += LINE_SCORES[removeCount - 1] * this._state.level;
 			this._fallRate = this._state.level;
-			this._updateGhost();
+			this._updateCollisionPoint();
 		}
 	}
 
@@ -293,6 +304,7 @@ export default class Tetris {
 		}
 	}
 
+	// Randomly generates a new tetromino.
 	_generateTetromino() {
 		let idx = Math.floor(Math.random() * (Types.length - 0.00001)),
 			type = Types[idx];
