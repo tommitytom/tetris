@@ -14,18 +14,18 @@ gulp.task('default', ['browserify']);
 gulp.task('deploy', ['inline']);
 
 gulp.task('clean', function() {
-	return gulp.src(['build/*', 'dist/*']).pipe(rm());
+	return gulp.src(['./build/*', './dist/*']).pipe(rm());
 });
 
 gulp.task('compile', ['clean'], function() {
-	return gulp.src('src/*.js')
+	return gulp.src('./src/*.js')
 		.pipe(babel({ presets: ['es2015'] }))
 		.pipe(gulp.dest('./build/intermediate'));
 });
 
 gulp.task('browserify', ['compile'], function() {
 	var stream = browserify({
-		entries: 'build/intermediate/Browser.js',
+		entries: './build/intermediate/Browser.js',
 	})
 	.bundle();
 
@@ -34,31 +34,31 @@ gulp.task('browserify', ['compile'], function() {
 });
 
 gulp.task('minify-js', ['browserify'], function() {
-	return gulp.src('build/tetris.js')
+	return gulp.src('./build/tetris.js')
 	  .pipe(uglify())
 	  .pipe(rename({ extname: '.min.js' }))
 	  .pipe(gulp.dest('./build'));
 });
 
 gulp.task('minify-css', function() {
-	return gulp.src('src/tetris.css')
+	return gulp.src('./src/tetris.css')
 		.pipe(cleanCSS({ compatibility: 'ie8' }))
 		.pipe(rename({ extname: '.min.css' }))
-		.pipe(gulp.dest('build'));
+		.pipe(gulp.dest('./build'));
 });
 
 gulp.task('inline', ['minify-js', 'minify-css'], function() {
-	return gulp.src('src/index.html')
+	return gulp.src('./src/index.html')
 		.pipe(htmlreplace({
 			cssInline: {
-				src: gulp.src('build/tetris.min.css'),
+				src: gulp.src('./build/tetris.min.css'),
 				tpl: '<style>%s</style>'
 			},
 			jsInline: {
-				src: gulp.src('build/tetris.min.js'),
+				src: gulp.src('./build/tetris.min.js'),
 				tpl: '<script type="text/javascript">%s</script>'
 			}
 		}))
 		.pipe(htmlmin({ collapseWhitespace: true }))    	
-		.pipe(gulp.dest('dist/'));
+		.pipe(gulp.dest('./dist/'));
 });
