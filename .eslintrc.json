@@ -30,6 +30,7 @@
 
     "strict": [2, "never"],
     "indent": ["error", "tab"],
-    "quotes": [2, "single"]
+    "quotes": [2, "single"],
+    "indentSwitchCase": true
   }
 }

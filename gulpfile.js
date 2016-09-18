@@ -1,72 +1,64 @@
-'use strict';
+const gulp = require('gulp');
+const rename = require('gulp-rename');
+const babel = require('gulp-babel');
+const uglify = require('gulp-uglify');
+const rm = require('gulp-rimraf');
+const changed = require('gulp-changed');
+const browserify = require('browserify');
+const source = require('vinyl-source-stream');
+const htmlreplace = require('gulp-html-replace');
+const htmlmin = require('gulp-htmlmin');
+const cleanCSS = require('gulp-clean-css');
 
-var gulp        = require('gulp'),
-	sourcemaps  = require('gulp-sourcemaps'),
-	rename      = require('gulp-rename'),
-	babel       = require('gulp-babel'),
-	uglify      = require('gulp-uglify'),
-	rm          = require('gulp-rimraf'),
-	changed     = require('gulp-changed'),
-	browserify  = require('browserify'),
-	source      = require('vinyl-source-stream'),
-	htmlreplace	= require('gulp-html-replace'),
-	htmlmin 	= require('gulp-htmlmin'),
-	cleanCSS 	= require('gulp-clean-css');
-
-gulp.task('default', ['clean', 'compile']);
-gulp.task('browser', ['browserify']);
-gulp.task('deploy', ['browserify', 'minify-js', 'minify-css', 'inline']);
+gulp.task('default', ['browserify']);
+gulp.task('deploy', ['inline']);
 
 gulp.task('clean', function() {
-	return gulp.src('src/*').pipe(rm());
+	return gulp.src(['build/*', 'dist/*']).pipe(rm());
 });
 
 gulp.task('compile', ['clean'], function() {
-	return gulp.src('dev/*.js')
-		.pipe(sourcemaps.init())
-		.pipe(babel({presets: ['es2015']}))
-		.pipe(sourcemaps.write())
-		.pipe(gulp.dest('./src'));
+	return gulp.src('src/*.js')
+		.pipe(babel({ presets: ['es2015'] }))
+		.pipe(gulp.dest('./build/intermediate'));
 });
 
-gulp.task('browserify', ['default'], function() {
+gulp.task('browserify', ['compile'], function() {
 	var stream = browserify({
-		entries: 'src/Browser.js',
+		entries: 'build/intermediate/Browser.js',
 	})
 	.bundle();
 
 	return stream.pipe(source('tetris.js'))
-		.pipe(gulp.dest('./dist'));
+		.pipe(gulp.dest('./build'));
 });
 
 gulp.task('minify-js', ['browserify'], function() {
-	return gulp.src('dist/tetris.js')
+	return gulp.src('build/tetris.js')
 	  .pipe(uglify())
 	  .pipe(rename({ extname: '.min.js' }))
-	  .pipe(gulp.dest('./dist'));
+	  .pipe(gulp.dest('./build'));
 });
 
 gulp.task('minify-css', function() {
-	return gulp.src('tetris.css')
-		.pipe(cleanCSS({compatibility: 'ie8'}))
+	return gulp.src('src/tetris.css')
+		.pipe(cleanCSS({ compatibility: 'ie8' }))
 		.pipe(rename({ extname: '.min.css' }))
-		.pipe(gulp.dest('dist'));
+		.pipe(gulp.dest('build'));
 });
 
 gulp.task('inline', ['minify-js', 'minify-css'], function() {
-	return gulp.src('index.html')
-    	.pipe(htmlreplace({
+	return gulp.src('src/index.html')
+		.pipe(htmlreplace({
 			cssInline: {
-				src: gulp.src('dist/tetris.min.css'),
+				src: gulp.src('build/tetris.min.css'),
 				tpl: '<style>%s</style>'
 			},
 			jsInline: {
-				src: gulp.src('dist/tetris.min.js'),
+				src: gulp.src('build/tetris.min.js'),
 				tpl: '<script type="text/javascript">%s</script>'
 			}
-    	}))
-    	.pipe(htmlmin({collapseWhitespace: true}))    	
-    	.pipe(gulp.dest('dist/'));
+		}))
+		.pipe(htmlmin({ collapseWhitespace: true }))    	
+		.pipe(gulp.dest('dist/'));
 });
-
-
