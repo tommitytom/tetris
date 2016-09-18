@@ -3,15 +3,19 @@ const rename = require('gulp-rename');
 const babel = require('gulp-babel');
 const uglify = require('gulp-uglify');
 const rm = require('gulp-rimraf');
-const changed = require('gulp-changed');
 const browserify = require('browserify');
 const source = require('vinyl-source-stream');
 const htmlreplace = require('gulp-html-replace');
 const htmlmin = require('gulp-htmlmin');
 const cleanCSS = require('gulp-clean-css');
+const minimist = require('minimist');
+const sftp = require('gulp-sftp');
+
+const args = minimist(process.argv.slice(2));
 
 gulp.task('default', ['browserify']);
-gulp.task('deploy', ['inline']);
+gulp.task('dist', ['inline']);
+gulp.task('deploy', ['upload']);
 
 gulp.task('clean', function() {
 	return gulp.src(['./build/*', './dist/*']).pipe(rm());
@@ -40,7 +44,7 @@ gulp.task('minify-js', ['browserify'], function() {
 	  .pipe(gulp.dest('./build'));
 });
 
-gulp.task('minify-css', function() {
+gulp.task('minify-css', ['compile'], function() {
 	return gulp.src('./src/tetris.css')
 		.pipe(cleanCSS({ compatibility: 'ie8' }))
 		.pipe(rename({ extname: '.min.css' }))
@@ -61,4 +65,14 @@ gulp.task('inline', ['minify-js', 'minify-css'], function() {
 		}))
 		.pipe(htmlmin({ collapseWhitespace: true }))    	
 		.pipe(gulp.dest('./dist/'));
+});
+
+gulp.task('upload', ['inline'], function() {
+	return gulp.src('dist/index.html')
+		.pipe(sftp({
+			host: args.host,
+			user: args.user,
+			pass: args.pass,
+			remotePath: args.remote
+		}));
 });
