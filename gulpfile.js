@@ -67,7 +67,7 @@ gulp.task('inline', ['minify-js', 'minify-css'], function() {
 		.pipe(gulp.dest('./dist/'));
 });
 
-gulp.task('upload', ['inline'], function() {
+gulp.task('upload', function() {
 	return gulp.src('dist/index.html')
 		.pipe(sftp({
 			host: args.host,
