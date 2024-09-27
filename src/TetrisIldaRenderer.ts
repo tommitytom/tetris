@@ -6,6 +6,16 @@ import * as Util from './Util';
 import Tetris from './Tetris';
 import { Color, GRAY_COLOR, TETROMINO_TYPES } from './Types';
 
+interface IPoint {
+	x: number;
+	y: number;
+}
+
+interface ILine {
+	from: IPoint;
+	to: IPoint;
+}
+
 const PLAY_AREA_BORDER = 1;
 const DEFAULT_OFFSET = { x: 0, y: 0 };
 
@@ -32,7 +42,7 @@ export default class TetrisIldaRenderer {
 
 		this._dac = new DAC();
  		this._dac.use(new Simulator());
-		//this._dac.use(new Helios());
+		this._dac.use(new Helios());
 
 		this._scene = new Scene({
 			//resolution: 70,
@@ -63,6 +73,10 @@ export default class TetrisIldaRenderer {
 	}
 
 	render(tetris: Tetris) {
+		this._scene.add(new Line({ from: {x: 0, y: 0}, to: {x: 0.5, y: 0.5}, color: [1,1,1] }));
+		this._scene.add(new Rect({ x: 0.6, y: 0.4, width: 0.15, height: 0.15, color: [1, 0, 0] }));
+		return;
+
 		/*ctx.fillStyle = 'black';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -99,21 +113,56 @@ export default class TetrisIldaRenderer {
 			this._finishIdx -= 8;
 		}*/
 
-		this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
+		//this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
 
-		for (let y = 0; y < tetris.size.h; y++) {
-			for (let x = 0; x < tetris.size.w; ++x) {
-				let idx = Util.getArrayIdx(x, y, tetris.size.w),
-					block = tetris.state.grid[idx];
+		const stackLines: ILine[] = [];
 
-				if (block !== -1) {
-					if (tetris.state.playing || this._finishIdx > idx) {						
-						this._drawBlock(x, y, TETROMINO_TYPES[block].color, DEFAULT_OFFSET);
-					} else {
-						this._drawBlock(x, y, GRAY_COLOR, DEFAULT_OFFSET);
-					}
+		const height = tetris.size.h;
+		let last: number = height;
+
+		for (let x = 0; x < tetris.size.w; ++x) {
+			let found: number = height;
+
+			for (let y = 0; y < tetris.size.h; y++) {
+				const idx = Util.getArrayIdx(x, y, tetris.size.w);
+				if (tetris.state.grid[idx] !== -1) {
+					found = y;
+					break;
 				}
 			}
+
+			if (found !== height) {
+				// Collumn is not empty
+				if (found === last) {
+					// Extend last					
+					stackLines[stackLines.length - 1].to.x += this._blockSize;
+				} else {
+					
+					
+					stackLines.push({ from: { x: x * this._blockSize, y: last * this._blockSize }, to: { x: x * this._blockSize, y: found * this._blockSize } });
+					stackLines.push({ from: { x: x * this._blockSize, y: found * this._blockSize }, to: { x: (x + 1) * this._blockSize, y: found * this._blockSize } });
+				}
+			} else {
+				if (last !== height) {
+					// Draw a line from last to the bottom
+					stackLines.push({ from: { x: x * this._blockSize, y: last * this._blockSize }, to: { x: x * this._blockSize, y: tetris.size.h * this._blockSize } });
+				}
+			}
+
+			last = found;
+		}
+		
+		let logged = false;
+
+		for (const line of stackLines) {
+			if (!logged) {
+				console.log(line);
+				logged = true;
+			}
+
+			this._scene.add(new Line({ from: line.from, to: line.to, color: [1,1,1] }));
+
+			break;
 		}
 
 		if (tetris.state.playing) {

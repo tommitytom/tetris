@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "helios": "tsx src/lazer.ts"
+    "helios": "tsx --watch src/lazer.ts"
   },
   "dependencies": {
     "@laser-dac/draw": "^0.6.1",
