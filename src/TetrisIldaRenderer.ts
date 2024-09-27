@@ -271,7 +271,7 @@ export default class TetrisIldaRenderer {
 			tetris.update(dt); 
 			this.render(tetris); 
 		});
-		this._dac.stream(this._scene, 15000, 60);
+		this._dac.stream(this._scene, 30000, 60);
 	}
 
 	render(tetris: Tetris) {
