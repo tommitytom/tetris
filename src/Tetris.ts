@@ -1,5 +1,6 @@
 import * as Util from './Util';
 import { TETROMINO_TYPES, TetrominoType } from './Types';
+import EventEmitter from 'eventemitter3';
 
 const LINE_SCORES = [100, 300, 400, 500];
 
@@ -28,7 +29,7 @@ interface GameState {
 	level: number;
 }
 
-export default class Tetris {
+export default class Tetris extends EventEmitter {
 	private _size: Size;
 	private _state: GameState;
 	private _fallMult: number;
@@ -37,6 +38,7 @@ export default class Tetris {
 	private _restrictHold: boolean;
 
 	constructor(w: number, h: number) {
+		super();
 		this._size = { w: w, h: h };
 		this.reset();
 	}
@@ -168,6 +170,8 @@ export default class Tetris {
 		}
 
 		this._updateCollisionPoint();
+
+		this.emit('rotate');
 	}
 
 	// Holds the current tetromino for later use. Also recalls the last held piece.
@@ -202,9 +206,7 @@ export default class Tetris {
 		if (this._state.removeCountdown > 0 && this._state.removing) {
 			this._state.removeCountdown -= delta;
 
-			if (this._state.removeCountdown <= 0) {
-				console.log('removingh completex');
-				
+			if (this._state.removeCountdown <= 0) {				
 				this._removeCompleted(this._state.removing);
 				this._state.removing = null;
 			} else {
@@ -275,8 +277,10 @@ export default class Tetris {
 			if (completed.length > 0) {
 				this._state.removing = completed;
 				this._state.removeCountdown = 2.0;
+				this.emit('removeBegin', completed.length);
 			}
 		} else {
+			this.emit('death');
 			this.stop();
 		}
 
@@ -330,6 +334,8 @@ export default class Tetris {
 		this._state.score += LINE_SCORES[removals.length - 1] * this._state.level;
 		this._fallRate = this._state.level * 2;
 		this._updateCollisionPoint();
+
+		this.emit('removeComplete', removals.length);
 	}
 
 	// Shift rows down from the specified row index

@@ -13,7 +13,10 @@
     "@laser-dac/draw": "^0.6.1",
     "@laser-dac/helios": "^0.3.2",
     "@laser-dac/simulator": "^0.3.4",
+    "@types/node-osc": "^6.0.3",
+    "eventemitter3": "^5.0.1",
     "gamepad": "https://github.com/ByteHive/node-gamepad",
+    "node-osc": "^9.1.3",
     "tsx": "^4.19.1"
   },
   "devDependencies": {

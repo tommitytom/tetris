@@ -231,6 +231,8 @@ export default class TetrisIldaRenderer {
 	private _gridSize: { w: number; h: number };
 	private _lastTime: number;
 
+	private _removing = false;
+
 	constructor(w, h) {
 		this._gridSize = { w: w, h: h };
 		this._gridLength = w * h;
@@ -267,8 +269,13 @@ export default class TetrisIldaRenderer {
 			
 			//console.log(dt);
 			
-
 			tetris.update(dt); 
+
+			const removing = !!tetris.state.removing;
+			if (removing != this._removing) {
+				this._removing = removing;
+			}
+
 			this.render(tetris); 
 		});
 		this._dac.stream(this._scene, 30000, 60);
@@ -305,6 +312,7 @@ export default class TetrisIldaRenderer {
 
 		const outline = generateTetrominoOutline(type);
 		//console.log('test', outline);
+		//const outline = type.outline;
 		
 
 		for (const line of outline) {
