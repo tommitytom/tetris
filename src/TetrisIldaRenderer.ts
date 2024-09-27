@@ -5,6 +5,7 @@ import { Scene, Rect, Path, Line } from '@laser-dac/draw';
 import * as Util from './Util';
 import Tetris from './Tetris';
 import { Color, GRAY_COLOR, TETROMINO_TYPES } from './Types';
+import { Point } from '@laser-dac/draw/dist/Point';
 
 interface IPoint {
 	x: number;
@@ -73,10 +74,6 @@ export default class TetrisIldaRenderer {
 	}
 
 	render(tetris: Tetris) {
-		this._scene.add(new Line({ from: {x: 0, y: 0}, to: {x: 0.5, y: 0.5}, color: [1,1,1] }));
-		this._scene.add(new Rect({ x: 0.6, y: 0.4, width: 0.15, height: 0.15, color: [1, 0, 0] }));
-		return;
-
 		/*ctx.fillStyle = 'black';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -113,7 +110,7 @@ export default class TetrisIldaRenderer {
 			this._finishIdx -= 8;
 		}*/
 
-		//this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
+		this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
 
 		const stackLines: ILine[] = [];
 
@@ -151,18 +148,15 @@ export default class TetrisIldaRenderer {
 
 			last = found;
 		}
-		
-		let logged = false;
 
-		for (const line of stackLines) {
-			if (!logged) {
-				console.log(line);
-				logged = true;
-			}
+		if (last !== height) {
+			const x = tetris.size.w;
+			stackLines.push({ from: { x: x * this._blockSize, y: last * this._blockSize }, to: { x: x * this._blockSize, y: tetris.size.h * this._blockSize } });
+		}
 
-			this._scene.add(new Line({ from: line.from, to: line.to, color: [1,1,1] }));
-
-			break;
+		for (let i = 0; i < stackLines.length; i++) {
+			const line = stackLines[i];
+			this._scene.add(new Line({ from: line.from, to: line.to, color: [1,1,1], blankBefore: i === 0 }));
 		}
 
 		if (tetris.state.playing) {
