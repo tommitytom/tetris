@@ -23,13 +23,19 @@ gamepad.on("up", function (id, num) {
         id: id,
         num: num,
     });
+
+    if (num === 1) {
+        tetris.fallRateMultiplier = 1;
+    }
 });
 
 // Listen for button down events on all gamepads
 gamepad.on("down", function (id, num) {
     if (tetris.state.playing) {
-        if (num === 1) {
+        if (num === 0) {
             tetris.drop();
+        } else if (num === 1) {
+            tetris.fallRateMultiplier = 4;
         } else if (num === 2) {
             tetris.moveLeft();
         } else if (num === 3) {
