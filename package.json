@@ -1,24 +1,24 @@
 {
-  "name": "tetris",
-  "version": "1.0.0",
-  "description": "",
-  "main": "gulpfile.js",
-  "devDependencies": {
-    "babel-preset-es2015": "^6.6.0",
-    "browserify": "^13.0.0",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
-    "gulp-clean-css": "^2.0.12",
-    "gulp-html-replace": "^1.6.1",
-    "gulp-htmlmin": "^2.0.0",
-    "gulp-rename": "^1.2.2",
-    "gulp-rimraf": "^0.2.0",
-    "gulp-sftp": "^0.1.5",
-    "gulp-sourcemaps": "^1.6.0",
-    "gulp-uglify": "^1.5.3",
-    "minimist": "^1.2.0",
-    "vinyl-source-stream": "^1.1.0"
+  "name": "tetris2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "helios": "tsx src/lazer.ts"
   },
-  "author": "",
-  "license": "ISC"
+  "dependencies": {
+    "@laser-dac/draw": "^0.6.1",
+    "@laser-dac/helios": "^0.3.2",
+    "@laser-dac/simulator": "^0.3.4",
+    "gamepad": "https://github.com/ByteHive/node-gamepad",
+    "tsx": "^4.19.1"
+  },
+  "devDependencies": {
+    "@types/gamepad": "^1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.1"
+  }
 }
