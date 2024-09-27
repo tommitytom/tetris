@@ -1,5 +1,15 @@
 export type Color = [number, number, number];
 
+export interface IPoint {
+	x: number;
+	y: number;
+}
+
+export interface ILine {
+	from: IPoint;
+	to: IPoint;
+}
+
 // Function to convert hex color to RGB array
 function hexToRgb(hex: string): Color {
     const bigint = parseInt(hex.slice(1), 16);
@@ -26,6 +36,7 @@ export interface TetrominoType {
 	h: number;
 	color: Color;
 	data: number[];
+    outline: IPoint[];
 }
 
 export const TETROMINO_TYPES : TetrominoType[]= [
@@ -35,6 +46,13 @@ export const TETROMINO_TYPES : TetrominoType[]= [
         data: [
             1, 1,
             1, 1
+        ],
+        outline: [
+            { x: 0, y: 0},
+            { x: 2, y: 0 },
+            { x: 2, y: 2 },
+            { x: 0, y: 2 },
+            { x: 0, y: 0},
         ]
     },
     {
@@ -43,6 +61,17 @@ export const TETROMINO_TYPES : TetrominoType[]= [
         data: [
             0, 1, 0,
             1, 1, 1
+        ],
+        outline: [
+            { x: 0, y: 2},
+            { x: 0, y: 1 },
+            { x: 1, y: 1 },
+            { x: 1, y: 0 },
+            { x: 2, y: 0 },
+            { x: 2, y: 1 },
+            { x: 3, y: 1 },
+            { x: 3, y: 2 },
+            { x: 0, y: 2 },
         ]
     },
     {
@@ -51,6 +80,17 @@ export const TETROMINO_TYPES : TetrominoType[]= [
         data: [
             1, 1, 0,
             0, 1, 1
+        ],
+        outline: [
+            { x: 0, y: 0},
+            { x: 2, y: 0 },
+            { x: 2, y: 1 },
+            { x: 3, y: 1 },
+            { x: 3, y: 2 },
+            { x: 1, y: 2 },
+            { x: 1, y: 1 },
+            { x: 0, y: 1 },
+            { x: 0, y: 0 },
         ]
     },
     {
@@ -59,6 +99,17 @@ export const TETROMINO_TYPES : TetrominoType[]= [
         data: [
             0, 1, 1,
             1, 1, 0
+        ],
+        outline: [
+            { x: 0, y: 2},
+            { x: 0, y: 1 },
+            { x: 1, y: 1 },
+            { x: 1, y: 0 },
+            { x: 3, y: 0 },
+            { x: 3, y: 1 },
+            { x: 2, y: 1 },
+            { x: 2, y: 2 },
+            { x: 0, y: 2 },
         ]
     },
     {
@@ -68,6 +119,15 @@ export const TETROMINO_TYPES : TetrominoType[]= [
             1, 1,
             1, 0,
             1, 0,
+        ],
+        outline: [
+            { x: 0, y: 0},
+            { x: 2, y: 0 },
+            { x: 2, y: 1 },
+            { x: 1, y: 1 },
+            { x: 1, y: 3 },
+            { x: 0, y: 3 },
+            { x: 0, y: 0 },
         ]
     },
     {
@@ -77,6 +137,15 @@ export const TETROMINO_TYPES : TetrominoType[]= [
             1, 1,
             0, 1,
             0, 1,
+        ],
+        outline: [
+            { x: 0, y: 0},
+            { x: 2, y: 0 },
+            { x: 2, y: 3 },
+            { x: 1, y: 3 },
+            { x: 1, y: 1 },
+            { x: 0, y: 1 },
+            { x: 0, y: 0 },
         ]
     },
     {
@@ -87,6 +156,13 @@ export const TETROMINO_TYPES : TetrominoType[]= [
             1,
             1,
             1
+        ],
+        outline: [
+            { x: 0, y: 0},
+            { x: 1, y: 0 },
+            { x: 1, y: 4 },
+            { x: 0, y: 4 },
+            { x: 0, y: 0 },
         ]
     }
 ];

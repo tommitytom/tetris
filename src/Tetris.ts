@@ -3,7 +3,7 @@ import { TETROMINO_TYPES, TetrominoType } from './Types';
 
 const LINE_SCORES = [100, 300, 400, 500];
 
-interface Size {
+export interface Size {
 	w: number;
 	h: number;
 }
@@ -21,6 +21,8 @@ interface GameState {
 	next: Tetromino;
 	held: Tetromino | null;
 	playing: boolean;
+	removeCountdown: number;
+	removing: number[]|null;
 	lines: number;
 	score: number;
 	level: number;
@@ -76,6 +78,8 @@ export default class Tetris {
 			next: this._generateTetromino(),
 			held: null,
 			playing: true,
+			removeCountdown: 0,
+			removing: null,
 			lines: 0,
 			score: 0,
 			level: 1
@@ -87,7 +91,7 @@ export default class Tetris {
 
 		this._fallMult = 1;
 		this._fallDelta = 0;
-		this._fallRate = 2; // Rows per second
+		this._fallRate = 2 * 2; // Rows per second
 		this._restrictHold = false;
 
 		this._updateCollisionPoint();
@@ -143,7 +147,8 @@ export default class Tetris {
 			w: t.type.h,
 			h: t.type.w,
 			color: t.type.color,
-			data: []
+			data: [],
+			outline: []
 		};
 
 		for (let x = 0; x < t.type.w; x++) {
@@ -192,6 +197,19 @@ export default class Tetris {
 	update(delta: number): void {
 		if (!this._state.playing) {
 			return;
+		}
+
+		if (this._state.removeCountdown > 0 && this._state.removing) {
+			this._state.removeCountdown -= delta;
+
+			if (this._state.removeCountdown <= 0) {
+				console.log('removingh completex');
+				
+				this._removeCompleted(this._state.removing);
+				this._state.removing = null;
+			} else {
+				return;
+			}
 		}
 
 		this._fallDelta += delta * this._fallMult * this._fallRate;
@@ -253,7 +271,11 @@ export default class Tetris {
 		this._bake(this._state.falling);
 
 		if (this._state.falling.pos.y >= 0) {
-			this._removeCompleted();
+			const completed = this.findCompleted();
+			if (completed.length > 0) {
+				this._state.removing = completed;
+				this._state.removeCountdown = 2.0;
+			}
 		} else {
 			this.stop();
 		}
@@ -276,9 +298,9 @@ export default class Tetris {
 		t.collisionPoint = t.pos.y + rows;
 	}
 
-	// Remove all complete lines
-	private _removeCompleted(): void {
-		let removeCount = 0;
+	private findCompleted(): number[] {
+		const found: number[] = [];
+
 		for (let y = this._size.h - 1; y > 0; y--) {
 			let complete = true;
 			for (let x = 0; x < this._size.w; x++) {
@@ -290,19 +312,24 @@ export default class Tetris {
 			}
 
 			if (complete) {
-				this._shiftRows(y);
-				removeCount++;
-				y++;
+				found.push(y);
 			}
 		}
 
-		if (removeCount > 0) {
-			this._state.lines += removeCount;
-			this._state.level = Math.floor(this._state.lines / 10) + 1;
-			this._state.score += LINE_SCORES[removeCount - 1] * this._state.level;
-			this._fallRate = this._state.level;
-			this._updateCollisionPoint();
+		return found;
+	}
+
+	// Remove all complete lines
+	private _removeCompleted(removals: number[]): void {
+		for (let y of removals) {
+			this._shiftRows(y);
 		}
+
+		this._state.lines += removals.length;
+		this._state.level = Math.floor(this._state.lines / 10) + 1;
+		this._state.score += LINE_SCORES[removals.length - 1] * this._state.level;
+		this._fallRate = this._state.level * 2;
+		this._updateCollisionPoint();
 	}
 
 	// Shift rows down from the specified row index

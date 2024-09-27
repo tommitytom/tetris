@@ -3,22 +3,73 @@ import { Simulator } from '@laser-dac/simulator';
 import { Helios } from '@laser-dac/helios';
 import { Scene, Rect, Path, Line } from '@laser-dac/draw';
 import * as Util from './Util';
-import Tetris from './Tetris';
-import { Color, GRAY_COLOR, TETROMINO_TYPES } from './Types';
+import Tetris, { Size } from './Tetris';
+import { ILine, Color, GRAY_COLOR, TETROMINO_TYPES, IPoint, TetrominoType } from './Types';
 import { Point } from '@laser-dac/draw/dist/Point';
-
-interface IPoint {
-	x: number;
-	y: number;
-}
-
-interface ILine {
-	from: IPoint;
-	to: IPoint;
-}
 
 const PLAY_AREA_BORDER = 1;
 const DEFAULT_OFFSET = { x: 0, y: 0 };
+
+enum Direction {
+	Up = 0,
+	Right = 1,
+	Down = 2,
+	Left = 3
+}
+
+
+
+function generateTetrominoOutline(tetromino: TetrominoType): IPoint[] {
+    const { w, h, data } = tetromino;
+    const outline: IPoint[] = [];
+    const directions = [
+        { dx: 0, dy: -1 }, // up
+        { dx: 1, dy: 0 },  // right
+        { dx: 0, dy: 1 },  // down
+        { dx: -1, dy: 0 }  // left
+    ];
+
+    function isOccupied(x: number, y: number): boolean {
+        if (x < 0 || x >= w || y < 0 || y >= h) return false;
+        return data[y * w + x] === 1;
+    }
+
+    function trace(startX: number, startY: number): void {
+        let x = startX;
+        let y = startY;
+        let dir = 0;
+
+        do {
+            outline.push({ x, y });
+
+            // Look for the next unoccupied cell
+            for (let i = 0; i < 4; i++) {
+                const nextDir = (dir + i) % 4;
+                const nx = x + directions[nextDir].dx;
+                const ny = y + directions[nextDir].dy;
+
+                if (!isOccupied(nx, ny)) {
+                    x = nx;
+                    y = ny;
+                    dir = (nextDir + 1) % 4;
+                    break;
+                }
+            }
+        } while (x !== startX || y !== startY);
+    }
+
+    // Find the starting point (first occupied cell)
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if (isOccupied(x, y)) {
+                trace(x, y + 1);
+                return outline;
+            }
+        }
+    }
+
+    return outline;
+}
 
 function generateBasic(tetris: Tetris, bs: number): ILine[] {
 	const lines: ILine[] = [];
@@ -64,37 +115,44 @@ function generateBasic(tetris: Tetris, bs: number): ILine[] {
 	return lines;
 }
 
+function traceShape(type: TetrominoType) {
+	//type.
+}
+
 function generateSlow(tetris: Tetris, bs: number): ILine[] {
+	return generateSlowGrid(tetris.size, tetris.state.grid, bs);
+}
+
+function generateSlowGrid(size: Size, grid: number[], bs: number): ILine[] {
 	const lines: ILine[] = [];
 
-	const height = tetris.size.h;
-	const width = tetris.size.w;
-	const grid = tetris.state.grid;
+	const height = size.h;
+	const width = size.w;
 
 	for (let y = 0; y < height; y++) {
 		for (let x = 0; x < width; x++) {
-			const idx = Util.getArrayIdx(x, y, tetris.size.w);
+			const idx = Util.getArrayIdx(x, y, size.w);
 			if (grid[idx] !== -1) {
 				// Check top
-				const top = Util.getArrayIdx(x, y - 1, tetris.size.w);
+				const top = Util.getArrayIdx(x, y - 1, size.w);
 				if (y === 0 || grid[top] === -1) {
 					lines.push({ from: { x: x * bs, y: y * bs }, to: { x: (x + 1) * bs, y: y * bs }});
 				}
 				
 				// Check bottom
-				const bottom = Util.getArrayIdx(x, y + 1, tetris.size.w);
+				const bottom = Util.getArrayIdx(x, y + 1, size.w);
 				if (y === height - 1 || grid[bottom] === -1) {
 					lines.push({ from: { x: x * bs, y: (y + 1) * bs}, to: { x: (x + 1) * bs, y: (y + 1) * bs}});
 				}
 				
 				// Check left
-				const left = Util.getArrayIdx(x - 1, y, tetris.size.w);
+				const left = Util.getArrayIdx(x - 1, y, size.w);
 				if (x === 0 || grid[left] === -1) {
 					lines.push({ from: { x: x * bs, y: y * bs}, to: { x: x * bs, y: (y + 1) * bs}});
 				}
 				
 				// Check right
-				const right = Util.getArrayIdx(x + 1, y, tetris.size.w);
+				const right = Util.getArrayIdx(x + 1, y, size.w);
 				if (x === width - 1 || grid[right] === -1) {
 					lines.push({ from: { x: (x + 1) * bs, y: y * bs}, to: { x: (x + 1) * bs, y: (y + 1) * bs}});
 				}
@@ -106,9 +164,12 @@ function generateSlow(tetris: Tetris, bs: number): ILine[] {
 }
 
 function generateOutline(tetris: Tetris, bs: number): ILine[] {
-    const height = tetris.size.h;
-	const width = tetris.size.w;
-	const grid = tetris.state.grid;
+	return generateOutlineGrid(tetris.size, tetris.state.grid, bs);
+}
+
+function generateOutlineGrid(size: Size, grid: number[], bs: number): ILine[] {
+    const height = size.h;
+	const width = size.w;
     const horizontalLines: ILine[] = [];
     const verticalLines: ILine[] = [];
 
@@ -116,8 +177,8 @@ function generateOutline(tetris: Tetris, bs: number): ILine[] {
     for (let y = 0; y <= height; y++) {
         let start: IPoint | null = null;
         for (let x = 0; x <= width; x++) {
-			const bottom = Util.getArrayIdx(x, y, tetris.size.w);
-			const top = Util.getArrayIdx(x, y - 1, tetris.size.w);
+			const bottom = Util.getArrayIdx(x, y, size.w);
+			const top = Util.getArrayIdx(x, y - 1, size.w);
             const topCell = y > 0 ? grid[top] : 0;
             const bottomCell = y < height ? grid[bottom] : 0;
             if (topCell !== bottomCell) {
@@ -138,8 +199,8 @@ function generateOutline(tetris: Tetris, bs: number): ILine[] {
     for (let x = 0; x <= width; x++) {
         let start: IPoint | null = null;
         for (let y = 0; y <= height; y++) {
-			const left = Util.getArrayIdx(x - 1, y, tetris.size.w);
-			const right = Util.getArrayIdx(x, y, tetris.size.w);
+			const left = Util.getArrayIdx(x - 1, y, size.w);
+			const right = Util.getArrayIdx(x, y, size.w);
 
             const leftCell = x > 0 ? grid[left] : 0;
             const rightCell = x < width ? grid[right] : 0;
@@ -222,15 +283,54 @@ export default class TetrisIldaRenderer {
 
 		for (let i = 0; i < stackLines.length; i++) {
 			const line = stackLines[i];
-			this._scene.add(new Line({ from: line.from, to: line.to, color: [1,1,1], blankBefore: true}));
+			this._scene.add(new Line({ from: line.from, to: line.to, color: [1,1,1], blankBefore: i === 0}));
 		}
 
-		if (tetris.state.playing) {
-			this._drawTetromino(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
+		if (tetris.state.removeCountdown > 0) {
+			this._drawRemoving(tetris);
+		} else if (tetris.state.playing) {
+			this._drawTetrominoBlocks(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
+			//this._drawTetrominoOutline(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
 		}
 	}
 
-	_drawTetromino(type, pos, color, offset) {
+	_drawRemoving(tetris: Tetris) {
+		for (const row of tetris.state.removing) {
+			this._scene.add(new Rect({ x: 0, y: row * this._blockSize, width: tetris.size.w * this._blockSize, height: this._blockSize, color: [1, 0, 0] }));
+		}
+	}
+
+	_drawTetrominoOutline(type: TetrominoType, pos: IPoint, color: Color, offset: IPoint) {
+		const s = this._blockSize;
+
+		const outline = generateTetrominoOutline(type);
+		//console.log('test', outline);
+		
+
+		for (const line of outline) {
+			//this._scene.add(new Line({ from: { x: line.from.x + offset.x, y: line.from.y + offset.y }, to: { x: line.to.x + offset.x, y: line.to.y + offset.y }, color }));
+		}
+
+		for (let i = 0; i < outline.length - 1; i++) {
+			const line = outline[i];
+			const next = outline[i + 1];
+
+			this._scene.add(new Line({ 
+				from: { 
+					x: ((line.x + pos.x) * s) + offset.x, 
+					y: ((line.y + pos.y) * s) + offset.y 
+				}, 
+				to: { 
+					x: ((next.x + pos.x) * s) + offset.x,
+					y: ((next.y + pos.y) * s) + offset.y
+				}, 
+				color,
+				blankBefore: i === 0}
+			));
+		}
+	}
+
+	_drawTetrominoBlocks(type: TetrominoType, pos: IPoint, color: Color, offset: IPoint) {
 		for (let y = 0; y < type.h; y++) {
 			if (pos.y + y >= 0) {
 				for (let x = 0; x < type.w; x++) {
@@ -243,7 +343,7 @@ export default class TetrisIldaRenderer {
 		}
 	}
 
-	_drawBlock(x, y, color: Color, offset) {
+	_drawBlock(x: number, y: number, color: Color, offset: IPoint) {
 		const s = this._blockSize;
 		this._scene.add(new Rect({ x: x * s + offset.x, y: y * s + offset.y, width: s, height: s, color }));
 	}
