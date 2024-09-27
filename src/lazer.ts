@@ -61,15 +61,15 @@ gamepad.on("down", function (id, num) {
 const osc = new Client('192.168.0.130', 3333);
 
 tetris.on('death', () =>{
-    osc.send('/SCENE/0');
+    osc.send('/SCENE/0', 1);
 });
 
 tetris.on('removeBegin', (amount: number) => { 
-    osc.send('/SCENE/1');
+    osc.send('/SCENE/2', 1);
     //osc.send('/tetris/removeBegin', amount);
 });
 
 tetris.on('removeComplete', (amount: number) => {
-    osc.send('/SCENE/2');
+    osc.send('/SCENE/1', 1);
     //osc.send('/tetris/removeComplete', amount);
 });
