@@ -185,7 +185,20 @@ export default class TetrisIldaRenderer {
 		this._dac.stream(this._scene, 30000, 60);
 	}
 
-	drawStack(tetris: Tetris) {
+	private render(tetris: Tetris) {
+		//this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
+
+		this.drawStack(tetris);
+
+		if (tetris.state.removeCountdown > 0) {
+			this.drawRemoving(tetris);
+		} else if (tetris.state.playing) {
+			//this._drawTetrominoBlocks(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
+			this.drawTetrominoOutline(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
+		}
+	}
+
+	private drawStack(tetris: Tetris) {
 		const bottom = tetris.size.h - 1;
 
 		for (let x = 0; x < tetris.size.w;) {
@@ -199,7 +212,7 @@ export default class TetrisIldaRenderer {
 					return;
 				}
 
-				this._drawLines(shape, [1,1,1], DEFAULT_OFFSET);
+				this.drawLines(shape, [1,1,1], DEFAULT_OFFSET);
 				const maxX = shape.reduce((acc, p) => Math.max(acc, p.x), 0);
 
 				if (maxX === x) {
@@ -213,26 +226,23 @@ export default class TetrisIldaRenderer {
 		}
 	}
 
-	render(tetris: Tetris) {
-		//this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
-
-		this.drawStack(tetris);
-
-		if (tetris.state.removeCountdown > 0) {
-			this._drawRemoving(tetris);
-		} else if (tetris.state.playing) {
-			//this._drawTetrominoBlocks(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
-			this._drawTetrominoOutline(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
-		}
-	}
-
-	_drawRemoving(tetris: Tetris) {
+	private drawRemoving(tetris: Tetris) {
 		for (const row of tetris.state.removing) {
 			this._scene.add(new Rect({ x: 0, y: row * this._blockSize, width: tetris.size.w * this._blockSize, height: this._blockSize, color: [1, 0, 0] }));
 		}
 	}
 
-	_drawLines(points: IPoint[], color: Color, offset: IPoint) {
+	private drawTetrominoOutline(type: TetrominoType, pos: IPoint, color: Color, offset: IPoint) {
+		const outline = traceShape(type.w, type.h, type.data, 0);
+		for (const line of outline) {
+			line.x += pos.x;
+			line.y += pos.y;
+		}
+
+		this.drawLines(outline, color, offset);
+	}
+
+	private drawLines(points: IPoint[], color: Color, offset: IPoint) {
 		const bs = this._blockSize;
 		for (let i = 0; i < points.length - 1; i++) {
 			const line = points[i];
@@ -253,30 +263,7 @@ export default class TetrisIldaRenderer {
 		}
 	}
 
-	_drawTetrominoOutline(type: TetrominoType, pos: IPoint, color: Color, offset: IPoint) {
-		const outline = traceShape(type.w, type.h, type.data, 0);
-		for (const line of outline) {
-			line.x += pos.x;
-			line.y += pos.y;
-		}
-
-		this._drawLines(outline, color, offset);
-	}
-
-	_drawTetrominoBlocks(type: TetrominoType, pos: IPoint, color: Color, offset: IPoint) {
-		for (let y = 0; y < type.h; y++) {
-			if (pos.y + y >= 0) {
-				for (let x = 0; x < type.w; x++) {
-					let idx = Util.getArrayIdx(x, y, type.w);
-					if (type.data[idx] !== 0) {
-						this._drawBlock(pos.x + x, pos.y + y, color, offset);
-					}
-				}
-			}
-		}
-	}
-
-	_drawBlock(x: number, y: number, color: Color, offset: IPoint) {
+	private drawBlock(x: number, y: number, color: Color, offset: IPoint) {
 		const s = this._blockSize;
 		this._scene.add(new Rect({ x: x * s + offset.x, y: y * s + offset.y, width: s, height: s, color }));
 	}

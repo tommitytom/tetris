@@ -9,6 +9,9 @@ const COMMAND_MAP = {
 };
 
 export default class KeyboardController {
+	private _listener: (v: string) => void;
+	private _element: HTMLElement;
+
 	constructor(element) {
 		this._element = document.getElementById(element);
 		this._listener = null;

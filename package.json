@@ -16,6 +16,7 @@
     "@types/node-osc": "^6.0.3",
     "eventemitter3": "^5.0.1",
     "gamepad": "https://github.com/ByteHive/node-gamepad",
+    "node-global-key-listener": "^0.3.0",
     "node-osc": "^9.1.3",
     "tsx": "^4.19.1"
   },
