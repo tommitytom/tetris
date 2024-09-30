@@ -16,7 +16,7 @@ interface Tetromino {
 	collisionPoint: number;
 }
 
-interface GameState {
+export interface GameState {
 	grid: number[];
 	falling: Tetromino;
 	next: Tetromino;
@@ -149,8 +149,7 @@ export default class Tetris extends EventEmitter {
 			w: t.type.h,
 			h: t.type.w,
 			color: t.type.color,
-			data: [],
-			outline: []
+			data: []
 		};
 
 		for (let x = 0; x < t.type.w; x++) {
@@ -255,7 +254,7 @@ export default class Tetris extends EventEmitter {
 					let blockIdx = Util.getArrayIdx(x, y, t.w);
 					let block = t.data[blockIdx];
 
-					if (block !== 0) {
+					if (block !== -1) {
 						let gridIdx = Util.getArrayIdx(xOff + x, gridY, this._size.w);
 						if (this._state.grid[gridIdx] !== -1) {
 							return true;
@@ -305,7 +304,7 @@ export default class Tetris extends EventEmitter {
 	private findCompleted(): number[] {
 		const found: number[] = [];
 
-		for (let y = this._size.h - 1; y > 0; y--) {
+		for (let y = 0; y < this._size.h; y++) {
 			let complete = true;
 			for (let x = 0; x < this._size.w; x++) {
 				let idx = Util.getArrayIdx(x, y, this._size.w);
@@ -324,7 +323,7 @@ export default class Tetris extends EventEmitter {
 	}
 
 	// Remove all complete lines
-	private _removeCompleted(removals: number[]): void {
+	private _removeCompleted(removals: number[]): void {		
 		for (let y of removals) {
 			this._shiftRows(y);
 		}
@@ -358,7 +357,7 @@ export default class Tetris extends EventEmitter {
 		for (let y = 0; y < t.type.h; y++) {
 			for (let x = 0; x < t.type.w; ++x) {
 				let block = t.type.data[y * t.type.w + x];
-				if (block !== 0) {
+				if (block !== -1) {
 					let idx = Util.getArrayIdx(t.pos.x + x, t.pos.y + y, this._size.w);
 					this._state.grid[idx] = t.typeIdx;
 				}

@@ -1,11 +1,21 @@
+import { Size, GameState } from './Tetris';
+import { Color, IPoint, TETROMINO_TYPES, TetrominoType } from './Types';
 import * as Util from './Util';
 
 const PLAY_AREA_BORDER = 1;
 const DEFAULT_OFFSET = { x: PLAY_AREA_BORDER, y: PLAY_AREA_BORDER };
+const GRAY_COLOR: Color = [60, 60, 60];
 
 export default class TetrisCanvasRenderer {
+	private _canvas: HTMLCanvasElement;
+	private _context: CanvasRenderingContext2D;
+	private _gridSize: Size;
+	private _gridLength: number;
+	private _blockSize: number;
+	private _finishIdx: number;
+
 	constructor(canvas, w, h) {
-		this._canvas = document.getElementById(canvas);
+		this._canvas = document.getElementById(canvas) as HTMLCanvasElement;
 		this._context = this._canvas.getContext('2d');
 		this._gridSize = { w: w, h: h };
 		this._gridLength = w * h;
@@ -20,7 +30,7 @@ export default class TetrisCanvasRenderer {
 		return this._gridSize;
 	}
 
-	render(state, delta) {
+	render(state: GameState, delta: number) {
 		const canvas = this._canvas,
 			ctx = this._context,
 			gridSize = this._gridSize;
@@ -28,6 +38,27 @@ export default class TetrisCanvasRenderer {
 		ctx.fillStyle = 'black';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+
+		/*ctx.fillStyle = 'gray';
+		ctx.strokeStyle = 'white';
+
+		const test = TETROMINO_TYPES[6];
+		const points = traceShape(test.w, test.h, test.data, this._blockSize);		
+
+		ctx.beginPath();
+		ctx.moveTo(points[0].x * this._blockSize + 250, points[0].y * this._blockSize + 250);
+		for (let i = 0; i < points.length; i++) {
+			const point = points[i];
+			ctx.lineTo(point.x * this._blockSize + 250, point.y * this._blockSize + 250);
+		}
+
+		ctx.closePath();
+		ctx.stroke();*/
+
+
+		//ctx.fillRect(250, 250, 100, 100);
+
+		ctx.fillStyle = 'black';
 		ctx.strokeStyle = 'gray';
 		ctx.beginPath();
 		ctx.rect(0, 0, this._gridSize.w * this._blockSize + PLAY_AREA_BORDER * 2, this._gridSize.h * this._blockSize + PLAY_AREA_BORDER * 2);
@@ -66,11 +97,11 @@ export default class TetrisCanvasRenderer {
 				let idx = Util.getArrayIdx(x, y, gridSize.w),
 					block = state.grid[idx];
 
-				if (block !== 0) {
+				if (block !== -1) {
 					if (state.playing || this._finishIdx > idx) {
-						this._drawBlock(x, y, block, DEFAULT_OFFSET);
+						this._drawBlock(x, y, TETROMINO_TYPES[block].color, DEFAULT_OFFSET);
 					} else {
-						this._drawBlock(x, y, 'gray', DEFAULT_OFFSET);
+						this._drawBlock(x, y, GRAY_COLOR, DEFAULT_OFFSET);
 					}
 				}
 			}
@@ -82,17 +113,17 @@ export default class TetrisCanvasRenderer {
 				y: state.falling.collisionPoint
 			};
 
-			this._drawTetromino(state.falling.type, ghostPos, 'rgb(60, 60, 60)', DEFAULT_OFFSET);
+			this._drawTetromino(state.falling.type, ghostPos, [60, 60, 60], DEFAULT_OFFSET);
 			this._drawTetromino(state.falling.type, state.falling.pos, state.falling.type.color, DEFAULT_OFFSET);
 		}
 	}
 
-	_drawTetromino(type, pos, color, offset) {
+	_drawTetromino(type: TetrominoType, pos: IPoint, color: Color, offset: IPoint) {
 		for (let y = 0; y < type.h; y++) {
 			if (pos.y + y >= 0) {
 				for (let x = 0; x < type.w; x++) {
 					let idx = Util.getArrayIdx(x, y, type.w);
-					if (type.data[idx] !== 0) {
+					if (type.data[idx] !== -1) {
 						this._drawBlock(pos.x + x, pos.y + y, color, offset);
 					}
 				}
@@ -100,11 +131,11 @@ export default class TetrisCanvasRenderer {
 		}
 	}
 
-	_drawBlock(x, y, color, offset) {
+	_drawBlock(x: number, y: number, color: Color, offset: IPoint) {
 		const ctx = this._context,
 			s = this._blockSize;
 
-		ctx.fillStyle = color;
+		ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 		ctx.strokeStyle = 'black';
 		ctx.lineWidth = 1;
 
