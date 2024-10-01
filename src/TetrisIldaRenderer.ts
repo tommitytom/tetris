@@ -256,8 +256,25 @@ export default class TetrisIldaRenderer {
 			return;
 		}
 
-		for (const row of tetris.state.removing) {
-			this._scene.add(new Rect({ x: 0, y: row * this._blockSize, width: tetris.size.w * this._blockSize, height: this._blockSize, color: [1, 0, 0] }));
+		const groups: Array<{ start: number; size: number; }> = [];
+
+		let start = tetris.state.removing[0];
+		let current = start;
+
+		for (let i = 1; i < tetris.state.removing.length; i++) {
+			const row = tetris.state.removing[i];
+			if (row !== current + 1) {
+				groups.push({ start, size: current - start + 1 });
+				start = row;
+			}
+
+			current = row;
+		}
+
+		groups.push({ start, size: current - start + 1 });
+
+		for (const group of groups) {
+			this._scene.add(new Rect({ x: 0, y: group.start * this._blockSize, width: tetris.size.w * this._blockSize, height: group.size * this._blockSize, color: [1, 0, 0] }));
 		}
 	}
 
