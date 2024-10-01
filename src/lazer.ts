@@ -12,6 +12,7 @@ import TetrisIldaRenderer from './TetrisIldaRenderer';
 const ENABLE_SFX = false;
 const ENABLE_BGM = false;
 const ENABLE_MIDI = false;
+const SHOW_SCORE = false;
 
 const NOTE_ROTATE = 55;
 const NOTE_LAND = 56;
@@ -26,8 +27,11 @@ const sfx1 = new Audic(`${__dirname}/../assets/SF1.wav`);
 const sfx2 = new Audic(`${__dirname}/../assets/SF2.wav`);
 
 const renderer = new TetrisIldaRenderer(12, 24);
+renderer.showScore = SHOW_SCORE;
+
 const tetris = new Tetris(renderer.gridSize.w, renderer.gridSize.h);
 renderer.start(tetris);
+
 
 function handleControllerEvent(name) {
     switch (name) {

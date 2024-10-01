@@ -142,6 +142,7 @@ export default class TetrisIldaRenderer {
 	private _lastTime: number;
 
 	private _removing = false;
+	private _showScore = false;
 
 	constructor(w, h) {
 		this._gridSize = { w: w, h: h };
@@ -160,6 +161,14 @@ export default class TetrisIldaRenderer {
 		});
 
 		this._lastTime = 0;
+	}
+
+	get showScore() {
+		return this._showScore;
+	}
+
+	set showScore(value) {
+		this._showScore = value;
 	}
 
 	get gridSize() {
@@ -201,14 +210,16 @@ export default class TetrisIldaRenderer {
 		}
 
 		// TODO: Only draw score when it has changed? How long for? Glow in the dark PLA?!
-		this._scene.add(new HersheyFont({ 
-			font,
-			text: tetris.state.score.toString(),
-			x: 0.6,
-			y: 0.5,
-			color: [1, 0, 0],
-			charWidth: 0.04,
-		}))
+		if (this._showScore) {
+			this._scene.add(new HersheyFont({ 
+				font,
+				text: tetris.state.score.toString(),
+				x: 0.6,
+				y: 0.5,
+				color: [1, 0, 0],
+				charWidth: 0.04,
+			}));
+		}
 	}
 
 	private drawStack(tetris: Tetris) {
