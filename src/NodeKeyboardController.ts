@@ -7,7 +7,8 @@ const COMMAND_MAP = new Map<IGlobalKey, string>([
     ['DOWN ARROW', 'IncreaseFallRate'],
     ['SPACE', 'Drop'],
     ['Z', 'Hold'],
-    ['R', 'Reset']
+    ['R', 'Reset'],
+    ['RETURN', 'Start']
 ]);
 
 export default class NodeKeyboardController {

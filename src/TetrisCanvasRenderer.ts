@@ -5,6 +5,7 @@ import * as Util from './Util';
 const PLAY_AREA_BORDER = 1;
 const DEFAULT_OFFSET = { x: PLAY_AREA_BORDER, y: PLAY_AREA_BORDER };
 const GRAY_COLOR: Color = [60, 60, 60];
+const REMOVAL_FLASH_RATE = 0.1; // Lower values make the flashing faster
 
 export default class TetrisCanvasRenderer {
 	private _canvas: HTMLCanvasElement;
@@ -107,7 +108,7 @@ export default class TetrisCanvasRenderer {
 			}
 		}
 
-		if (state.playing) {
+		if (state.playing && !state.removing) {
 			let ghostPos = {
 				x: state.falling.pos.x,
 				y: state.falling.collisionPoint
@@ -115,6 +116,15 @@ export default class TetrisCanvasRenderer {
 
 			this._drawTetromino(state.falling.type, ghostPos, [60, 60, 60], DEFAULT_OFFSET);
 			this._drawTetromino(state.falling.type, state.falling.pos, state.falling.type.color, DEFAULT_OFFSET);
+		}
+
+		if (state.removing) {
+			for (const removing of state.removing) {
+				for (let x = 0; x < gridSize.w; x++) {
+					const color: Color = state.removeCountdown % REMOVAL_FLASH_RATE < (REMOVAL_FLASH_RATE / 2) ? [255, 0, 0] : [0, 0, 0];
+					this._drawBlock(x, removing, color, DEFAULT_OFFSET);
+				}
+			}
 		}
 	}
 

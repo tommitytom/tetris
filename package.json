@@ -14,6 +14,7 @@
     "@laser-dac/helios": "^0.3.2",
     "@laser-dac/simulator": "^0.3.4",
     "@types/node-osc": "^6.0.3",
+    "audic": "^3.0.2",
     "eventemitter3": "^5.0.1",
     "gamepad": "https://github.com/ByteHive/node-gamepad",
     "node-global-key-listener": "^0.3.0",

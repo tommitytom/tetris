@@ -1,14 +1,20 @@
 import { DAC } from '@laser-dac/core';
-import { Simulator } from '@laser-dac/simulator';
+import { HersheyFont, Line, loadHersheyFont, Rect, Scene } from '@laser-dac/draw';
 import { Helios } from '@laser-dac/helios';
-import { Scene, Rect, Path, Line } from '@laser-dac/draw';
+import { Simulator } from '@laser-dac/simulator';
+import Tetris from './Tetris';
+import { Color, IPoint, TetrominoType } from './Types';
 import * as Util from './Util';
-import Tetris, { Size } from './Tetris';
-import { ILine, Color, GRAY_COLOR, TETROMINO_TYPES, IPoint, TetrominoType } from './Types';
-import { Point } from '@laser-dac/draw/dist/Point';
+import * as path from 'path';
 
-const PLAY_AREA_BORDER = 1;
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
+const __dirname = path.dirname(__filename); // get the name of the directory
+
+const font = loadHersheyFont(path.resolve(__dirname, '../assets/futural.jhf'));
+
 const DEFAULT_OFFSET = { x: 0, y: 0 };
+const REMOVAL_FLASH_RATE = 0.2; // Lower values make the flashing faster
 
 enum Direction {
 	Up = 0,
@@ -145,9 +151,6 @@ export default class TetrisIldaRenderer {
 
 		this._aspect = w / h;
 
-		//this._canvas.width = w * this._blockSize + 300;
-		//this._canvas.height = h * this._blockSize + PLAY_AREA_BORDER * 2;
-
 		this._dac = new DAC();
  		this._dac.use(new Simulator());
 		this._dac.use(new Helios());
@@ -196,6 +199,16 @@ export default class TetrisIldaRenderer {
 			//this._drawTetrominoBlocks(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
 			this.drawTetrominoOutline(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
 		}
+
+		// TODO: Only draw score when it has changed? How long for? Glow in the dark PLA?!
+		this._scene.add(new HersheyFont({ 
+			font,
+			text: tetris.state.score.toString(),
+			x: 0.6,
+			y: 0.5,
+			color: [1, 0, 0],
+			charWidth: 0.04,
+		}))
 	}
 
 	private drawStack(tetris: Tetris) {
@@ -227,6 +240,11 @@ export default class TetrisIldaRenderer {
 	}
 
 	private drawRemoving(tetris: Tetris) {
+		const flash = (tetris.state.removeCountdown % REMOVAL_FLASH_RATE) < (REMOVAL_FLASH_RATE / 2);
+		if (!flash) {
+			return;
+		}
+
 		for (const row of tetris.state.removing) {
 			this._scene.add(new Rect({ x: 0, y: row * this._blockSize, width: tetris.size.w * this._blockSize, height: this._blockSize, color: [1, 0, 0] }));
 		}

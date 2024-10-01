@@ -3,6 +3,7 @@ import { TETROMINO_TYPES, TetrominoType } from './Types';
 import EventEmitter from 'eventemitter3';
 
 const LINE_SCORES = [100, 300, 400, 500];
+const REMOVAL_TIME = 0.5;
 
 export interface Size {
 	w: number;
@@ -65,6 +66,7 @@ export default class Tetris extends EventEmitter {
 	// Starts/resumes the game.
 	start(): void {
 		this._state.playing = true;
+		this.emit('begin');
 	}
 
 	// Stops/pauses the game.
@@ -79,7 +81,7 @@ export default class Tetris extends EventEmitter {
 			falling: this._generateTetromino(),
 			next: this._generateTetromino(),
 			held: null,
-			playing: true,
+			playing: false,
 			removeCountdown: 0,
 			removing: null,
 			lines: 0,
@@ -99,9 +101,13 @@ export default class Tetris extends EventEmitter {
 		this._updateCollisionPoint();
 	}
 
+	public get inputEnabled(): boolean {
+		return this._state.playing && !this._state.removing;
+	}
+
 	// Moves the current tetromino to the left by 1 space.
 	moveLeft(): void {
-		if (!this._state.playing) {
+		if (!this.inputEnabled) {
 			return;
 		}
 
@@ -114,7 +120,7 @@ export default class Tetris extends EventEmitter {
 
 	// Moves the current tetromino to the right by 1 space.
 	moveRight(): void {
-		if (!this._state.playing) {
+		if (!this.inputEnabled) {
 			return;
 		}
 
@@ -127,7 +133,7 @@ export default class Tetris extends EventEmitter {
 
 	// Drops the current tetromino (hard drop).
 	drop(): void {
-		if (!this._state.playing) {
+		if (!this.inputEnabled) {
 			return;
 		}
 
@@ -140,7 +146,7 @@ export default class Tetris extends EventEmitter {
 
 	// Rotates the current tetromino 90 degrees clockwise.
 	rotate(): void {
-		if (!this._state.playing) {
+		if (!this.inputEnabled) {
 			return;
 		}
 
@@ -175,7 +181,7 @@ export default class Tetris extends EventEmitter {
 
 	// Holds the current tetromino for later use. Also recalls the last held piece.
 	hold(): void {
-		if (!this._state.playing || this._restrictHold) {
+		if (!this.inputEnabled) {
 			return;
 		}
 
@@ -275,8 +281,10 @@ export default class Tetris extends EventEmitter {
 			const completed = this.findCompleted();
 			if (completed.length > 0) {
 				this._state.removing = completed;
-				this._state.removeCountdown = 2.0;
+				this._state.removeCountdown = REMOVAL_TIME;
 				this.emit('removeBegin', completed.length);
+			} else {
+				this.emit('land');
 			}
 		} else {
 			this.emit('death');
