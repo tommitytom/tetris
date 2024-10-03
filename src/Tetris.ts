@@ -36,7 +36,7 @@ export default class Tetris extends EventEmitter {
 	private _fallMult: number;
 	private _fallDelta: number;
 	private _fallRate: number;
-	private _restrictHold: boolean;
+	//private _restrictHold: boolean;
 
 	constructor(w: number, h: number) {
 		super();
@@ -96,7 +96,7 @@ export default class Tetris extends EventEmitter {
 		this._fallMult = 1;
 		this._fallDelta = 0;
 		this._fallRate = 2 * 2; // Rows per second
-		this._restrictHold = false;
+		//this._restrictHold = false;
 
 		this._updateCollisionPoint();
 	}
@@ -197,13 +197,14 @@ export default class Tetris extends EventEmitter {
 
 		falling.pos.y = -falling.type.h;
 		this._state.held = falling;
-		this._restrictHold = true;
+		//this._restrictHold = true;
 
 		this._updateCollisionPoint();
 	}
 
 	// Updates the game - called every frame.
 	update(delta: number): void {
+		return;
 		if (!this._state.playing) {
 			return;
 		}
@@ -293,7 +294,7 @@ export default class Tetris extends EventEmitter {
 
 		this._state.falling = this._state.next;
 		this._state.next = this._generateTetromino();
-		this._restrictHold = false;
+		//this._restrictHold = false;
 		this._updateCollisionPoint();
 	}
 

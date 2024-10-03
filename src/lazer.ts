@@ -1,6 +1,6 @@
 import Audic from 'audic';
 import midi from 'midi';
-import { Client } from 'node-osc';
+//import { Client } from 'node-osc';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,20 +18,26 @@ const NOTE_ROTATE = 55;
 const NOTE_LAND = 56;
 const NOTE_CLEAR = 57;
 
-const osc = new Client('192.168.0.130', 3333);
+//const osc = new Client('192.168.0.130', 3333);
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
-const bgm = new Audic(`${__dirname}/../assets/TEST.ogg`);
-const sfx1 = new Audic(`${__dirname}/../assets/SF1.wav`);
-const sfx2 = new Audic(`${__dirname}/../assets/SF2.wav`);
 
-const renderer = new TetrisIldaRenderer(12, 24);
+const bgm = new Audic(`${__dirname}/../assets/TEST.ogg`);
+const sfxStart = new Audic(`${__dirname}/../assets/1_START.wav`);
+const sfxFlip = new Audic(`${__dirname}/../assets/2_FLIP.wav`);
+const sfxLand = new Audic(`${__dirname}/../assets/3_LAND.wav`);
+const sfxLine = new Audic(`${__dirname}/../assets/4_LINE.wav`);
+const sfxOver = new Audic(`${__dirname}/../assets/5_OVER.wav`);
+
+const BOARD_WIDTH = 12;
+const BOARD_HEIGHT = 24;
+
+const renderer = new TetrisIldaRenderer(BOARD_WIDTH, BOARD_HEIGHT);
 renderer.showScore = SHOW_SCORE;
 
-const tetris = new Tetris(renderer.gridSize.w, renderer.gridSize.h);
+const tetris = new Tetris(BOARD_WIDTH, BOARD_HEIGHT);
 renderer.start(tetris);
-
 
 function handleControllerEvent(name) {
     switch (name) {
@@ -47,10 +53,10 @@ function handleControllerEvent(name) {
     }
 }
 
-const gamepadController = new GamepadController();
+///const gamepadController = new GamepadController();
 const keyboardController = new NodeKeyboardController();
 
-gamepadController.onEvent(handleControllerEvent);
+//gamepadController.onEvent(handleControllerEvent);
 keyboardController.onEvent(handleControllerEvent);
 
 let midiOutput: midi.Output;
@@ -67,15 +73,16 @@ tetris.on('begin', () =>{
     if (ENABLE_BGM) {
         bgm.loop = true;
         bgm.play();
+        sfxStart.play();
     }
     //osc.send('/SCENE/0', 1);
 });
 
 tetris.on('rotate', () =>{
     if (ENABLE_SFX) {
-        sfx1.currentTime = 0;
-        sfx1.playing = false;
-        sfx1.play();
+        sfxFlip.currentTime = 0;
+        sfxFlip.playing = false;
+        sfxFlip.play();
     }
 
     if (midiOutput) {
@@ -86,6 +93,9 @@ tetris.on('rotate', () =>{
 });
 
 tetris.on('land', () =>{
+    if (ENABLE_SFX) {
+        sfxLand.play();
+    }
     if (midiOutput) {
         midiOutput.sendMessage([144,NOTE_LAND,127])
     }
@@ -93,23 +103,29 @@ tetris.on('land', () =>{
 });
 
 tetris.on('death', () =>{
-    osc.send('/SCENE/0', 1);
+    if (ENABLE_SFX) {
+        sfxOver.play();
+        bgm.pause();
+        bgm.playing = false;
+        bgm.currentTime = 0;
+    }
+    //osc.send('/SCENE/0', 1);
 });
 
-tetris.on('removeBegin', (amount: number) => {
+tetris.on('removeBegin', (_: number) => {
     if (ENABLE_SFX) {
-        sfx2.play();
+        sfxLine.play();
     }
 
     if (midiOutput) {
         midiOutput.sendMessage([144,NOTE_CLEAR,127])
     }
     
-    osc.send('/SCENE/2', 1);
+    //osc.send('/SCENE/2', 1);
     //osc.send('/tetris/removeBegin', amount);
 });
 
-tetris.on('removeComplete', (amount: number) => {
-    osc.send('/SCENE/1', 1);
+tetris.on('removeComplete', (_: number) => {
+    //osc.send('/SCENE/1', 1);
     //osc.send('/tetris/removeComplete', amount);
 });

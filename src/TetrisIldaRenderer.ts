@@ -1,6 +1,6 @@
 import { DAC } from '@laser-dac/core';
 import { HersheyFont, Line, loadHersheyFont, Rect, Scene } from '@laser-dac/draw';
-import { Helios } from '@laser-dac/helios';
+//import { Helios } from '@laser-dac/helios';
 import { Simulator } from '@laser-dac/simulator';
 import Tetris from './Tetris';
 import { Color, IPoint, TetrominoType } from './Types';
@@ -15,6 +15,8 @@ const font = loadHersheyFont(path.resolve(__dirname, '../assets/futural.jhf'));
 
 const DEFAULT_OFFSET = { x: 0, y: 0 };
 const REMOVAL_FLASH_RATE = 0.2; // Lower values make the flashing faster
+const FPS = 120;
+const POINT_RATE = 30000;
 
 enum Direction {
 	Up = 0,
@@ -131,36 +133,68 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoi
 	return points;
 }
 
+class ScrollText {
+	private _text: string;
+	private _spacing: number = 0.2;
+	private _charWidth: number = 0.04;
+	private _fullWidth: number;
+	private _position: number = 1;
+	private _speed: number = 0.5;
+
+	constructor(text: string) {
+		this._text = text;
+		this._fullWidth = this._text.length * this._spacing;
+	}
+
+	private getVisibleChars(): string {
+		return this._text;//.substring(0, 3);
+	}
+
+	public render(dt: number): HersheyFont[] {
+		const chars: HersheyFont[] = [];
+		
+		const visible = this.getVisibleChars();
+
+		const amount = dt * this._speed;
+		this._position -= amount;
+
+		if (this._position < -this._fullWidth) {
+			this._position = 1;
+		}
+
+		for (let i = 0; i < visible.length; i++) {
+			chars.push(new HersheyFont({ 
+				font,
+				text: visible[i],
+				x: this._position + i * this._spacing,
+				y: 0.5,
+				color: [1, 0, 0],
+				charWidth: this._charWidth,
+			}));
+		}
+
+		return chars;
+	}
+}
+
 export default class TetrisIldaRenderer {
-	private _dac: DAC;
 	private _scene: Scene;
 	private _blockSize: number;
-	private _gridLength: number;
-	private _finishIdx: number;
-	private _aspect: number;
 	private _gridSize: { w: number; h: number };
-	private _lastTime: number;
-
-	private _removing = false;
 	private _showScore = false;
+	private _scroller: ScrollText;
+	private _dac: DAC;
+	private _lastTime = 0;
 
 	constructor(w, h) {
 		this._gridSize = { w: w, h: h };
-		this._gridLength = w * h;
 		this._blockSize = 1 / h;
-		this._finishIdx = -1;
-
-		this._aspect = w / h;
-
 		this._dac = new DAC();
  		this._dac.use(new Simulator());
-		this._dac.use(new Helios());
+		//this._dac.use(new Helios());
 
-		this._scene = new Scene({
-			//resolution: 70,
-		});
-
-		this._lastTime = 0;
+		this._scene = new Scene({});
+		this._scroller = new ScrollText('TETRIS IS COOL');
 	}
 
 	get showScore() {
@@ -183,22 +217,49 @@ export default class TetrisIldaRenderer {
 			let dt = this._lastTime !== 0 ? (performance.now() - this._lastTime) / 1000 : 0;
 			this._lastTime = time;		
 			
-			//console.log(dt);
-			
 			tetris.update(dt); 
 
-			const removing = !!tetris.state.removing;
-			if (removing != this._removing) {
-				this._removing = removing;
-			}
+			this.render(tetris, dt); 
+		}, FPS);
+		
+		this._dac.stream(this._scene, POINT_RATE, FPS);
+	}
+/*
+	private renderStartScreen() {
+		this._scene.add(new HersheyFont({ 
+			font,
+			text: 'TETRIS',
+			x: 0.3,
+			y: 0.5,
+			color: [1, 0, 0],
+			charWidth: 0.04,
+		}));
 
-			this.render(tetris); 
-		});
-		this._dac.stream(this._scene, 30000, 60);
+		this._scene.add(new HersheyFont({ 
+			font,
+			text: 'Press start to play',
+			x: 0.2,
+			y: 0.4,
+			color: [1, 0, 0],
+			charWidth: 0.02,
+		}));
+	}
+*/
+	private renderGameOver(dt: number) {
+		const chars = this._scroller.render(dt);
+		for (const char of chars) {
+			this._scene.add(char);
+		}
 	}
 
-	private render(tetris: Tetris) {
+	private render(tetris: Tetris, dt: number) {
 		//this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
+
+		if (!tetris.state.playing) {
+			this.renderGameOver(dt);
+			//this.renderStartScreen();
+			return;
+		}
 
 		this.drawStack(tetris);
 
@@ -308,9 +369,10 @@ export default class TetrisIldaRenderer {
 			));
 		}
 	}
-
+/*
 	private drawBlock(x: number, y: number, color: Color, offset: IPoint) {
 		const s = this._blockSize;
 		this._scene.add(new Rect({ x: x * s + offset.x, y: y * s + offset.y, width: s, height: s, color }));
 	}
+*/
 }

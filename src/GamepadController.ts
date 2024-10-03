@@ -1,15 +1,5 @@
 import gamepad from 'gamepad';
 
-const COMMAND_MAP = {
-	'ArrowLeft': 	'MoveLeft',
-	'ArrowRight': 	'MoveRight',
-	'ArrowUp': 		'Rotate',
-	'ArrowDown': 	'IncreaseFallRate',
-	'Space': 		'Drop',
-	'KeyZ': 		'Hold',
-	'KeyR': 		'Reset'
-};
-
 export default class GamepadController {
     private _listener: (v: string) => void;
 
@@ -26,7 +16,7 @@ export default class GamepadController {
         setInterval(gamepad.detectDevices, 500);
 
         // Listen for button down events on all gamepads
-        gamepad.on("down", function (id, num) {
+        gamepad.on("down", (_, num) => {
             if (num === 0) {
                 this._listener('Drop');
             } else if (num === 1) {
@@ -43,7 +33,7 @@ export default class GamepadController {
         });
 
         // Listen for button up events on all gamepads
-        gamepad.on("up", function (id, num) {
+        gamepad.on("up", (_, num) => {
             if (num === 1) {
                 this._listener('ResetFallRate');
             }

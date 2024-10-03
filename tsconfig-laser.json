@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ESNext",
+        "lib": ["ES2020"],
+  
+        "strict": false,
+        "strictNullChecks": false,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "moduleResolution": "bundler",
+        "sourceMap": true,
+
+        "outDir": "dist-laser",
+    },
+    "files": [
+        "src/NodeKeyboardController.ts",
+        "src/lazer.ts",
+        "src/Tetris.ts",
+        "src/TetrisIldaRenderer.ts",
+        "src/Types.ts",
+        "src/Util.ts",
+    ],
+    "tsc-alias": {
+		"resolveFullPaths": true,
+        "resolveFullExtension": ".js",
+		"verbose": false
+	}
+}
+  

@@ -18,7 +18,7 @@ export default class NodeKeyboardController {
 	constructor() {
         this._listener = new GlobalKeyboardListener();
 
-        this._listener.addListener((e, down) => {
+        this._listener.addListener((e, _) => {
             const isDown = e.state === 'DOWN';           
 
             if (isDown) {
