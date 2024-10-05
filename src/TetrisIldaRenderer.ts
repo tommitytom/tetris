@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
-const font = loadHersheyFont(path.resolve(__dirname, '../assets/futural.jhf'));
+const font = loadHersheyFont(path.resolve(__dirname, '../assets/futural2.jhf'));
 
 const DEFAULT_OFFSET = { x: 0, y: 0 };
 const REMOVAL_FLASH_RATE = 0.2; // Lower values make the flashing faster
