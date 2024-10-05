@@ -149,7 +149,7 @@ tetris.on('death', () =>{
     osc.send('/SCENE/0', 1);
 });
 
-tetris.on('removeBegin', (_: number) => {
+tetris.on('removeBegin', (amount: number) => {
     if (ENABLE_SFX) {
         sfxLine.play();
     }
@@ -162,7 +162,7 @@ tetris.on('removeBegin', (_: number) => {
     osc.send('/tetris/removeBegin', amount);
 });
 
-tetris.on('removeComplete', (_: number) => {
+tetris.on('removeComplete', (amount: number) => {
     osc.send('/SCENE/1', 1);
     osc.send('/tetris/removeComplete', amount);
 });

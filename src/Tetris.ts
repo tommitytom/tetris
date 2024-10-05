@@ -95,7 +95,7 @@ export default class Tetris extends EventEmitter {
 
 		this._fallMult = 1;
 		this._fallDelta = 0;
-		this._fallRate = 2 * 2; // Rows per second
+		this._fallRate = 2; // Rows per second
 		//this._restrictHold = false;
 
 		this._updateCollisionPoint();
