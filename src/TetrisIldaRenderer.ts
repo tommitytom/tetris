@@ -1,6 +1,6 @@
 import { DAC } from '@laser-dac/core';
 import { HersheyFont, Line, loadHersheyFont, Rect, Scene } from '@laser-dac/draw';
-//import { Helios } from '@laser-dac/helios';
+import { Helios } from '@laser-dac/helios';
 import { Simulator } from '@laser-dac/simulator';
 import Tetris from './Tetris';
 import { Color, IPoint, TetrominoType } from './Types';
@@ -324,7 +324,7 @@ export default class TetrisIldaRenderer {
 		this._blockSize = 1 / h;
 		this._dac = new DAC();
  		this._dac.use(new Simulator());
-		//this._dac.use(new Helios());
+		this._dac.use(new Helios());
 
 		this._scene = new Scene({});
 		this._scroller = new ScrollTextGroup();
