@@ -4,10 +4,10 @@ import midi from 'midi';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-import GamepadController from './GamepadController';
+//import GamepadController from './GamepadController';
 import NodeKeyboardController from './NodeKeyboardController';
 import Tetris from './Tetris';
-import TetrisIldaRenderer from './TetrisIldaRenderer';
+import TetrisIldaRenderer, { GameStage } from './TetrisIldaRenderer';
 
 const ENABLE_SFX = false;
 const ENABLE_BGM = false;
@@ -40,16 +40,53 @@ const tetris = new Tetris(BOARD_WIDTH, BOARD_HEIGHT);
 renderer.start(tetris);
 
 function handleControllerEvent(name) {
-    switch (name) {
-        case 'MoveLeft': 			tetris.moveLeft(); 				break;
-        case 'MoveRight': 			tetris.moveRight(); 			break;
-        case 'Rotate': 				tetris.rotate(); 				break;
-        case 'IncreaseFallRate': 	tetris.fallRateMultiplier = 6; 	break;
-        case 'ResetFallRate': 		tetris.fallRateMultiplier = 1; 	break;
-        case 'Drop':  				tetris.drop();					break;
-        case 'Hold':  				tetris.hold();					break;
-        case 'Reset':  				tetris.reset();					break;
-        case 'Start':  				tetris.start();					break;
+    switch (renderer.state.stage) {
+        case GameStage.StartScreen: {
+            switch (name) {
+                case 'Start':
+                    // Trigger start sound
+                    tetris.start();
+                    renderer.state.stage = GameStage.Playing;
+                    break;
+            }
+
+            break;
+        }
+        case GameStage.Playing: {
+            switch (name) {
+                case 'MoveLeft': 			tetris.moveLeft(); 				break;
+                case 'MoveRight': 			tetris.moveRight(); 			break;
+                case 'Rotate': 				tetris.rotate(); 				break;
+                case 'IncreaseFallRate': 	tetris.fallRateMultiplier = 6; 	break;
+                case 'ResetFallRate': 		tetris.fallRateMultiplier = 1; 	break;
+                case 'Drop':  				tetris.drop();					break;
+                case 'Hold':  				tetris.hold();					break;
+                case 'Start':  				tetris.start();					break;
+                case 'Reset':  				
+                    tetris.reset();
+                    renderer.state.stage = GameStage.StartScreen;
+                    break;
+            }
+
+            break;
+        }
+        case GameStage.GameOver: {
+            switch (name) {
+                case 'Start':
+                    tetris.reset();
+                    renderer.state.stage = GameStage.StartScreen;
+                    break;
+            }
+            break;
+        }
+        case GameStage.Greets: {
+            switch (name) {
+                case 'Start':
+                    renderer.state.stage = GameStage.StartScreen;
+                    break;
+            }
+            break;
+        }
     }
 }
 

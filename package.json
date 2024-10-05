@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "helios": "tsx --watch src/lazer.ts",
+    "helios": "tsx src/lazer.ts",
+    "helios-watch": "tsx --watch src/lazer.ts",
     "helios-build": "tsc -p tsconfig-laser.json && yarn tsc-alias -p tsconfig-laser.json",
     "helios-run": "yarn helios-build && node dist-laser/lazer.js"
   },
@@ -18,7 +19,6 @@
     "@types/node-osc": "^6.0.3",
     "audic": "^3.0.2",
     "eventemitter3": "^5.0.1",
-    "gamepad": "https://github.com/ByteHive/node-gamepad",
     "midi": "^2.0.0",
     "node-global-key-listener": "^0.3.0",
     "node-osc": "^9.1.3",
@@ -26,7 +26,6 @@
     "tsx": "^4.19.1"
   },
   "devDependencies": {
-    "@types/gamepad": "^1",
     "@types/midi": "^2",
     "typescript": "^5.5.3",
     "vite": "^5.4.1"

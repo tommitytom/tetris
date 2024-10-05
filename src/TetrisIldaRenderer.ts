@@ -25,6 +25,18 @@ enum Direction {
 	Left = 3
 }
 
+export enum GameStage {
+	StartScreen,
+	Playing,
+	GameOver,
+	Greets
+}
+
+export interface IGameState {
+	stage: GameStage;
+	stageTime: number;
+}
+
 function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoint[]|null {
 	function isOccupied(x: number, y: number): boolean {
 		if (x < 0 || x >= w || y < 0 || y >= h) return false;
@@ -133,44 +145,163 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoi
 	return points;
 }
 
+const GREETS: string[] = [
+	"CHICKEN",
+	"CATCHINASHES",
+	"PELRUN",
+	"ATOMICSEED",
+	"RIPT",
+	"GAIA",
+	"KRION",
+	"DOK",
+	"JIMAGE",
+	"sh0CK",
+	"JAZZCAT",
+	"STYLE",
+	"0F.DIGITAL",
+	"iLKke",
+	"ANIMAL BRO"
+];
+
+export function hslToRgb(h: number, s: number, l: number): Color {
+	let r, g, b;
+
+	function hue2rgb(p: number, q: number, t: number) {
+		if (t < 0) t += 1;
+		if (t > 1) t -= 1;
+		if (t < 1/6) return p + (q - p) * 6 * t;
+		if (t < 1/2) return q;
+		if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+		return p;
+	}
+
+	if (s === 0) {
+		r = g = b = l; // achromatic
+	} else {
+		const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+		const p = 2 * l - q;
+
+		r = hue2rgb(p, q, h + 1/3);
+		g = hue2rgb(p, q, h);
+		b = hue2rgb(p, q, h - 1/3);
+	}
+
+	return [r, g, b];
+}
+
+
 class ScrollText {
 	private _text: string;
 	private _spacing: number = 0.2;
 	private _charWidth: number = 0.04;
 	private _fullWidth: number;
 	private _position: number = 1;
-	private _speed: number = 0.5;
+	private _speed: number = 1;
+	private _phase: number = 0;
+	private _loop: boolean = true;
+	private _finished: boolean = false;
 
-	constructor(text: string) {
+	constructor(text: string, loop: boolean = true) {
 		this._text = text;
 		this._fullWidth = this._text.length * this._spacing;
+		this._loop = loop;
 	}
 
-	private getVisibleChars(): string {
-		return this._text;//.substring(0, 3);
+	public get finished() {
+		return this._finished;
+	}
+
+	public reset() {
+		this._position = 1;
+		this._finished = false;
 	}
 
 	public render(dt: number): HersheyFont[] {
 		const chars: HersheyFont[] = [];
 		
-		const visible = this.getVisibleChars();
+		if (this._finished) {
+			return chars;
+		}
 
 		const amount = dt * this._speed;
 		this._position -= amount;
 
 		if (this._position < -this._fullWidth) {
-			this._position = 1;
+			if (this._loop) {
+				this._position = 1;
+			} else {
+				this._finished = true;
+			}
 		}
 
-		for (let i = 0; i < visible.length; i++) {
-			chars.push(new HersheyFont({ 
-				font,
-				text: visible[i],
-				x: this._position + i * this._spacing,
-				y: 0.5,
-				color: [1, 0, 0],
-				charWidth: this._charWidth,
-			}));
+		for (let i = 0; i < this._text.length; i++) {
+			const xPos = this._position + i * this._spacing;
+
+			if (xPos > -this._spacing && xPos < 1) {
+				const col = hslToRgb(xPos, 1, 0.5);
+				const phase = xPos * Math.PI * 2;
+				const yPos = 0.5 + Math.sin(phase + this._phase) * 0.1;
+
+				chars.push(new HersheyFont({ 
+					font,
+					text: this._text[i],
+					x: this._position + i * this._spacing,
+					y: yPos,
+					color: col,
+					charWidth: this._charWidth,
+				}));
+			}
+		}
+
+		return chars;
+	}
+}
+
+class ScrollTextGroup {
+	private _texts: ScrollText[] = [];
+	private _current: number = 0;
+	private _finished: boolean = false;
+	private _loop: boolean = true;
+
+	constructor(loop: boolean = true) {
+		this._loop = loop;
+	}
+
+	public reset() {
+		this._current = 0;
+		this._finished = false;
+		for (const text of this._texts) {
+			text.reset();
+		}
+	}
+
+	public add(text: string) {
+		this._texts.push(new ScrollText(text, false));
+	}
+
+	public render(dt: number): HersheyFont[] {
+		const chars: HersheyFont[] = [];
+
+		if (this._finished) {
+			return chars;
+		}
+
+		const current = this._texts[this._current];
+		const rendered = current.render(dt);
+		for (const char of rendered) {
+			chars.push(char);
+		}
+
+		if (current.finished) {
+			current.reset();
+			this._current++;
+			if (this._current >= this._texts.length) {
+				if (this._loop) {
+					this._current = 0;
+				} else {
+					this._finished = true;
+				}
+			}
 		}
 
 		return chars;
@@ -182,9 +313,11 @@ export default class TetrisIldaRenderer {
 	private _blockSize: number;
 	private _gridSize: { w: number; h: number };
 	private _showScore = false;
-	private _scroller: ScrollText;
+	private _scroller: ScrollTextGroup;
 	private _dac: DAC;
 	private _lastTime = 0;
+
+	private _state: IGameState;
 
 	constructor(w, h) {
 		this._gridSize = { w: w, h: h };
@@ -194,7 +327,20 @@ export default class TetrisIldaRenderer {
 		//this._dac.use(new Helios());
 
 		this._scene = new Scene({});
-		this._scroller = new ScrollText('TETRIS IS COOL');
+		this._scroller = new ScrollTextGroup();
+
+		for (const greet of GREETS) {
+			this._scroller.add(greet);
+		}
+
+		this._state = {
+			stage: GameStage.StartScreen,
+			stageTime: 0
+		};
+	}
+
+	get state() {
+		return this._state;
 	}
 
 	get showScore() {
@@ -224,43 +370,24 @@ export default class TetrisIldaRenderer {
 		
 		this._dac.stream(this._scene, POINT_RATE, FPS);
 	}
-/*
-	private renderStartScreen() {
-		this._scene.add(new HersheyFont({ 
+
+	private renderGreets(dt: number) {
+		/*this._scene.add(new HersheyFont({
 			font,
-			text: 'TETRIS',
+			text: 'GREETS',
 			x: 0.3,
-			y: 0.5,
+			y: 0.2,
 			color: [1, 0, 0],
 			charWidth: 0.04,
-		}));
+		}));*/
 
-		this._scene.add(new HersheyFont({ 
-			font,
-			text: 'Press start to play',
-			x: 0.2,
-			y: 0.4,
-			color: [1, 0, 0],
-			charWidth: 0.02,
-		}));
-	}
-*/
-	private renderGameOver(dt: number) {
 		const chars = this._scroller.render(dt);
 		for (const char of chars) {
 			this._scene.add(char);
 		}
 	}
 
-	private render(tetris: Tetris, dt: number) {
-		//this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
-
-		if (!tetris.state.playing) {
-			this.renderGameOver(dt);
-			//this.renderStartScreen();
-			return;
-		}
-
+	private renderGame(tetris: Tetris, dt: number) {
 		this.drawStack(tetris);
 
 		if (tetris.state.removeCountdown > 0) {
@@ -268,6 +395,11 @@ export default class TetrisIldaRenderer {
 		} else if (tetris.state.playing) {
 			//this._drawTetrominoBlocks(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
 			this.drawTetrominoOutline(tetris.state.falling.type, tetris.state.falling.pos, tetris.state.falling.type.color, DEFAULT_OFFSET);
+		} else {
+			this._state.stage = GameStage.GameOver;
+			this._state.stageTime = 0;
+			this._scroller.reset();
+			tetris.reset();
 		}
 
 		// TODO: Only draw score when it has changed? How long for? Glow in the dark PLA?!
@@ -281,6 +413,67 @@ export default class TetrisIldaRenderer {
 				charWidth: 0.04,
 			}));
 		}
+	}
+
+	private renderStart(dt: number) {
+		this._scene.add(new HersheyFont({ 
+			font,
+			text: 'TETRIS',
+			x: 0.3,
+			y: 0.5,
+			color: [1, 0, 0],
+			charWidth: 0.04,
+		}));
+
+		this._scene.add(new HersheyFont({ 
+			font,
+			text: 'Press enter to play',
+			x: 0.2,
+			y: 0.4,
+			color: [1, 0, 0],
+			charWidth: 0.02,
+		}));
+	}
+	
+	private renderGameOver(dt: number) {
+		this._scene.add(new HersheyFont({ 
+			font,
+			text: 'GAME OVER',
+			x: 0.2,
+			y: 0.5,
+			color: [1, 0, 0],
+			charWidth: 0.04,
+		}));
+
+		if (this._state.stageTime > 2) {
+			this._state.stage = GameStage.Greets;
+			this._state.stageTime = 0;
+		}
+	}
+
+	private render(tetris: Tetris, dt: number) {
+		//this._scene.add(new Rect({ x: 0, y: 0, width: tetris.size.w * this._blockSize, height: tetris.size.h * this._blockSize, color: [1, 0, 0] }));
+
+		switch (this._state.stage) {
+			case GameStage.StartScreen: {
+				this.renderStart(dt);
+				break;
+			}
+			case GameStage.Playing: {
+				this.renderGame(tetris, dt);
+				break;
+			}
+			case GameStage.GameOver: {
+				this.renderGameOver(dt);
+				break;
+			}
+			case GameStage.Greets: {
+				this.renderGreets(dt);
+				break;
+			}
+		}
+
+		this._state.stageTime += dt;
 	}
 
 	private drawStack(tetris: Tetris) {

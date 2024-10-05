@@ -204,7 +204,6 @@ export default class Tetris extends EventEmitter {
 
 	// Updates the game - called every frame.
 	update(delta: number): void {
-		return;
 		if (!this._state.playing) {
 			return;
 		}

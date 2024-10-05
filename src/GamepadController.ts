@@ -1,4 +1,6 @@
-import gamepad from 'gamepad';
+// Gamepad support SUXXXX so disabled for now
+
+/*import gamepad from 'gamepad';
 
 export default class GamepadController {
     private _listener: (v: string) => void;
@@ -43,4 +45,4 @@ export default class GamepadController {
 	onEvent(func) {
 		this._listener = func;
 	}
-}
+}*/
