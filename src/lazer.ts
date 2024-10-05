@@ -1,6 +1,6 @@
 import Audic from 'audic';
 import midi from 'midi';
-//import { Client } from 'node-osc';
+import { Client } from 'node-osc';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,7 +18,7 @@ const NOTE_ROTATE = 55;
 const NOTE_LAND = 56;
 const NOTE_CLEAR = 57;
 
-//const osc = new Client('192.168.0.130', 3333);
+const osc = new Client('192.168.0.130', 3333);
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -112,7 +112,7 @@ tetris.on('begin', () =>{
         bgm.play();
         sfxStart.play();
     }
-    //osc.send('/SCENE/0', 1);
+    osc.send('/SCENE/0', 1);
 });
 
 tetris.on('rotate', () =>{
@@ -126,7 +126,7 @@ tetris.on('rotate', () =>{
         midiOutput.sendMessage([144,NOTE_ROTATE,127])
     }
 
-    //osc.send('/SCENE/0', 1);
+    osc.send('/SCENE/0', 1);
 });
 
 tetris.on('land', () =>{
@@ -136,7 +136,7 @@ tetris.on('land', () =>{
     if (midiOutput) {
         midiOutput.sendMessage([144,NOTE_LAND,127])
     }
-    //osc.send('/SCENE/0', 1);
+    osc.send('/SCENE/0', 1);
 });
 
 tetris.on('death', () =>{
@@ -146,7 +146,7 @@ tetris.on('death', () =>{
         bgm.playing = false;
         bgm.currentTime = 0;
     }
-    //osc.send('/SCENE/0', 1);
+    osc.send('/SCENE/0', 1);
 });
 
 tetris.on('removeBegin', (_: number) => {
@@ -158,11 +158,11 @@ tetris.on('removeBegin', (_: number) => {
         midiOutput.sendMessage([144,NOTE_CLEAR,127])
     }
     
-    //osc.send('/SCENE/2', 1);
-    //osc.send('/tetris/removeBegin', amount);
+    osc.send('/SCENE/2', 1);
+    osc.send('/tetris/removeBegin', amount);
 });
 
 tetris.on('removeComplete', (_: number) => {
-    //osc.send('/SCENE/1', 1);
-    //osc.send('/tetris/removeComplete', amount);
+    osc.send('/SCENE/1', 1);
+    osc.send('/tetris/removeComplete', amount);
 });
