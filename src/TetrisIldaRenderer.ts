@@ -334,6 +334,7 @@ export default class TetrisIldaRenderer {
 	private _lastTime = 0;
 
 	private _state: IGameState;
+	private _stackGroups: Array<IPoint[]> = [];
 
 	constructor(w, h) {
 		this._gridSize = { w: w, h: h };
@@ -372,6 +373,18 @@ export default class TetrisIldaRenderer {
 	}
 
 	public async start(tetris: Tetris) {
+		tetris.on('land', () => {
+			this.updateStackGroups(tetris);
+		});
+
+		tetris.on('removeBegin', () => {
+			this.updateStackGroups(tetris);
+		});
+
+		tetris.on('removeComplete', () => {
+			this.updateStackGroups(tetris);
+		});
+
 		await this._dac.start();
 		
 		this._scene.start(() => {
@@ -452,16 +465,23 @@ export default class TetrisIldaRenderer {
 	}
 	
 	private renderGameOver(dt: number) {
-		this._scene.add(new HersheyFont({ 
-			font,
-			text: 'GAME OVER',
-			x: 0.2,
-			y: 0.5,
-			color: [1, 0, 0],
-			charWidth: 0.04,
-		}));
+		const SHRINK_DURATION = 2;
+		const GAME_OVER_DURATION = 2;
 
-		if (this._state.stageTime > 2) {
+		if (this._state.stageTime < SHRINK_DURATION) {
+
+		} else {
+			this._scene.add(new HersheyFont({ 
+				font,
+				text: 'GAME OVER',
+				x: 0.2,
+				y: 0.5,
+				color: [1, 0, 0],
+				charWidth: 0.04,
+			}));
+		}
+
+		if (this._state.stageTime > GAME_OVER_DURATION + SHRINK_DURATION) {
 			this._state.stage = GameStage.Greets;
 			this._state.stageTime = 0;
 		}
@@ -492,33 +512,34 @@ export default class TetrisIldaRenderer {
 		this._state.stageTime += dt;
 	}
 
-	private drawStack(tetris: Tetris) {
+	private updateStackGroups(tetris: Tetris) {
+		this._stackGroups = [];
+
 		const bottom = tetris.size.h - 1;
 		const w = tetris.size.w;
 		const h = tetris.size.h;
 		const grid = tetris.state.grid;
+		let lastOccupied = false;
 
-		for (let x = 0; x < tetris.size.w;) {
+		for (let x = 0; x < tetris.size.w; x++) {
 			const idx = Util.getArrayIdx(x, bottom, tetris.size.w);
 			const occupied = tetris.state.grid[idx] !== -1;
 
 			if (occupied) {
+				if (lastOccupied) {
+					continue;
+				}
+
 				const shape: IPoint[] = traceShape(w, h, grid, x, bottom, (value) => value !== -1, 300);
 				if (shape === null) {
 					console.log('NOT FOUND');
-					return;
+					continue;
 				}
 
-				this.drawLines(shape, STACK_COLOR, DEFAULT_OFFSET);
-				const maxX = shape.reduce((acc, p) => Math.max(acc, p.x), 0);
-
-				if (maxX === x) {
-					x++;
-				} else {
-					x = maxX;
-				}
+				this._stackGroups.push(shape);
+				lastOccupied = true;
 			} else {
-				x++;
+				lastOccupied = false;
 			}
 		}
 
@@ -598,10 +619,16 @@ export default class TetrisIldaRenderer {
 							knownEnclosed.add(v); 
 						}
 
-						this.drawLines(shape, STACK_COLOR, DEFAULT_OFFSET);
+						this._stackGroups.push(shape);
 					}
 				}
 			}
+		}
+	}
+
+	private drawStack(tetris: Tetris) {
+		for (const group of this._stackGroups) {
+			this.drawLines(group, STACK_COLOR, DEFAULT_OFFSET);
 		}
 	}
 
