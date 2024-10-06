@@ -21,6 +21,7 @@ export default class TetrisApp extends FrameUpdater {
 					case 'Drop':  				this._game.drop();					break;
 					case 'Hold':  				this._game.hold();					break;
 					case 'Reset':  				this._game.reset();					break;
+					case 'Start':  				this._game.start();					break;
 				}
 			});
 		}

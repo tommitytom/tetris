@@ -63,6 +63,18 @@ export default class Tetris extends EventEmitter {
 		this._fallMult = value;
 	}
 
+	public isIndexOccupied(idx: number): boolean {
+		return this._state.grid[idx] !== -1;
+	}
+	
+	public isOccupied(x: number, y: number): boolean {
+		if (x < 0 || x >= this._size.w || y < 0 || y >= this._size.h) {
+			return true;
+		}
+
+		return this.isIndexOccupied(Util.getArrayIdx(x, y, this._size.w));
+	}
+
 	// Starts/resumes the game.
 	start(): void {
 		this._state.playing = true;

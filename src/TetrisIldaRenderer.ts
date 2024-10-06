@@ -17,6 +17,7 @@ const DEFAULT_OFFSET = { x: 0, y: 0 };
 const REMOVAL_FLASH_RATE = 0.2; // Lower values make the flashing faster
 const FPS = 120;
 const POINT_RATE = 30000;
+const STACK_COLOR: Color = [1, 1, 1];
 
 enum Direction {
 	Up = 0,
@@ -37,16 +38,16 @@ export interface IGameState {
 	stageTime: number;
 }
 
-function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoint[]|null {
-	function isOccupied(x: number, y: number): boolean {
+function traceShape(w: number, h: number, grid: number[], xOffset: number, yOffset: number, filter: (value: number) => boolean, max: number): IPoint[]|null {
+	function isValid(x: number, y: number): boolean {
 		if (x < 0 || x >= w || y < 0 || y >= h) return false;
-		return grid[y * w + x] !== -1;
+		return filter(grid[y * w + x]);
 	}
 
 	function findStart(): IPoint|null {
 		for (let x = xOffset; x < w; x++) {
-			for (let y = h - 1; y >= 0; y--) {
-				if (isOccupied(x, y)) {
+			for (let y = yOffset; y >= 0; y--) {
+				if (isValid(x, y)) {
 					return { x, y };
 				}
 			}
@@ -72,11 +73,14 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoi
 	while (true) {
 		switch (dir) {
 			case Direction.Left: {
-				if (isOccupied(pos.x - 1, pos.y)) {
+				const leftOccupied = isValid(pos.x - 1, pos.y);
+				const topLeftOccupied = isValid(pos.x - 1, pos.y - 1);
+
+				if (leftOccupied) {
 					dir = Direction.Down;
 					pos.y++;
 					points.push({ x: pos.x, y: pos.y });
-				} else if (!isOccupied(pos.x - 1, pos.y - 1)) {
+				} else if (!topLeftOccupied) {
 					dir = Direction.Up;
 					pos.y--;
 					points.push({ x: pos.x, y: pos.y });
@@ -88,11 +92,14 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoi
 				break;
 			}
 			case Direction.Right: {
-				if (isOccupied(pos.x, pos.y - 1)) {
+				const aboveOccupied = isValid(pos.x, pos.y - 1);
+				const thisOccupied = isValid(pos.x, pos.y);
+
+				if (aboveOccupied) {
 					dir = Direction.Up;
 					pos.y--;
 					points.push({ x: pos.x, y: pos.y });
-				} else if (!isOccupied(pos.x, pos.y)) {
+				} else if (!thisOccupied) {
 					dir = Direction.Down;
 					pos.y++;
 					points.push({ x: pos.x, y: pos.y });
@@ -104,11 +111,14 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoi
 				break;
 			}
 			case Direction.Up: {
-				if (isOccupied(pos.x - 1, pos.y - 1)) {
+				const topLeftOccupied = isValid(pos.x - 1, pos.y - 1);
+				const aboveOccupied = isValid(pos.x, pos.y - 1);
+
+				if (topLeftOccupied) {
 					dir = Direction.Left;
 					pos.x--;
 					points.push({ x: pos.x, y: pos.y });
-				} else if (!isOccupied(pos.x, pos.y - 1)) {
+				} else if (!aboveOccupied) {
 					dir = Direction.Right;
 					pos.x++;
 					points.push({ x: pos.x, y: pos.y });
@@ -120,11 +130,14 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoi
 				break;
 			}
 			case Direction.Down: {
-				if (isOccupied(pos.x, pos.y)) {
+				const thisOccupied = isValid(pos.x, pos.y);
+				const leftOccupied = isValid(pos.x - 1, pos.y);
+
+				if (thisOccupied) {
 					dir = Direction.Right;
 					pos.x++;
 					points.push({ x: pos.x, y: pos.y });
-				} else if (!isOccupied(pos.x - 1, pos.y)) {
+				} else if (!leftOccupied) {
 					dir = Direction.Left;
 					pos.x--;
 					points.push({ x: pos.x, y: pos.y });
@@ -137,7 +150,10 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number): IPoi
 			}
 		}
 
-		if (pos.x === start.x && pos.y === start.y || count++ > 300) {
+		if (pos.x === start.x && pos.y === start.y || count++ > max) {
+			if (count > max) {
+				console.log('OVER');
+			}
 			break;
 		}
 	}
@@ -478,19 +494,22 @@ export default class TetrisIldaRenderer {
 
 	private drawStack(tetris: Tetris) {
 		const bottom = tetris.size.h - 1;
+		const w = tetris.size.w;
+		const h = tetris.size.h;
+		const grid = tetris.state.grid;
 
 		for (let x = 0; x < tetris.size.w;) {
 			const idx = Util.getArrayIdx(x, bottom, tetris.size.w);
 			const occupied = tetris.state.grid[idx] !== -1;
 
 			if (occupied) {
-				const shape: IPoint[] = traceShape(tetris.size.w, tetris.size.h, tetris.state.grid, x);
+				const shape: IPoint[] = traceShape(w, h, grid, x, bottom, (value) => value !== -1, 300);
 				if (shape === null) {
 					console.log('NOT FOUND');
 					return;
 				}
 
-				this.drawLines(shape, [1,1,1], DEFAULT_OFFSET);
+				this.drawLines(shape, STACK_COLOR, DEFAULT_OFFSET);
 				const maxX = shape.reduce((acc, p) => Math.max(acc, p.x), 0);
 
 				if (maxX === x) {
@@ -500,6 +519,88 @@ export default class TetrisIldaRenderer {
 				}
 			} else {
 				x++;
+			}
+		}
+
+		const knownExternal = new Set<number>();
+
+		function getEnclosed(x: number, y: number): Set<number> {
+			const visited = new Set<number>();
+			const stack: IPoint[] = [{x, y}];
+
+			while (stack.length > 0) {
+				const coord = stack.pop();
+				const idx = Util.getArrayIdx(coord.x, coord.y, w);
+
+				if (knownExternal.has(idx)) {
+					return null;
+				}
+
+				if (coord.x < 0 || coord.x >= w || coord.y < 0 || coord.y >= h) {
+					for (const v of visited) { knownExternal.add(v); }
+					return null;
+				}
+
+				if (tetris.isIndexOccupied(idx) || visited.has(idx)) {
+					continue;
+				}
+
+				stack.push({ x: coord.x - 1, y: coord.y });
+				stack.push({ x: coord.x + 1, y: coord.y });
+				stack.push({ x: coord.x, y: coord.y - 1 });
+				stack.push({ x: coord.x, y: coord.y + 1 });
+
+				visited.add(idx);
+			}
+
+			return visited;
+		}
+
+		const knownEnclosed = new Set<number>();
+		for (let y = tetris.size.h - 1; y >= 0; y--) {
+			for (let x = 0; x < tetris.size.w; x++) {
+				if (!tetris.isOccupied(x, y) && !knownEnclosed.has(Util.getArrayIdx(x, y, w))) {
+					const enclosed = getEnclosed(x, y);
+					if (enclosed && enclosed.size > 0) {
+						// Get bounds of enclosed area
+						const area = { left: 999999, right: -999999, top: 999999, bottom: -999999 };
+
+						for (const v of enclosed) {
+							const pos = Util.getXY(v, w);
+							area.left = Math.min(area.left, pos.x);
+							area.right = Math.max(area.right, pos.x);
+							area.top = Math.min(area.top, pos.y);
+							area.bottom = Math.max(area.bottom, pos.y);
+						}
+
+						const areaWidth = area.right - area.left + 1;
+						const areaHeight = area.bottom - area.top + 1;						
+						const enclosedGrid: number[] = new Array(areaWidth * areaHeight).fill(-1);
+
+						for (const v of enclosed) {
+							const pos = Util.getXY(v, w);
+							const enclosedIdx = Util.getArrayIdx(pos.x - area.left, pos.y - area.top, areaWidth);
+							enclosedGrid[enclosedIdx] = 1;
+						}
+
+						const shape: IPoint[] = traceShape(areaWidth, areaHeight, enclosedGrid, 0, areaHeight - 1, (value) => value !== -1, 75);
+						if (shape === null) {
+							console.log('NOT FOUND');
+							return;
+						}
+
+						for (const point of shape) {
+							point.x += area.left;
+							point.y += area.top;
+						}
+
+						for (const v of enclosed) { 
+							knownEnclosed.add(v); 
+						}
+
+						this.drawLines(shape, STACK_COLOR, DEFAULT_OFFSET);
+					}
+				}
 			}
 		}
 	}
@@ -533,7 +634,7 @@ export default class TetrisIldaRenderer {
 	}
 
 	private drawTetrominoOutline(type: TetrominoType, pos: IPoint, color: Color, offset: IPoint) {
-		const outline = traceShape(type.w, type.h, type.data, 0);
+		const outline = traceShape(type.w, type.h, type.data, 0, type.h - 1, (value) => value !== -1, 50);
 		for (const line of outline) {
 			line.x += pos.x;
 			line.y += pos.y;
