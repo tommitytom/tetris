@@ -158,6 +158,17 @@ function traceShape(w: number, h: number, grid: number[], xOffset: number, yOffs
 		}
 	}
 
+	// Remove duplicates
+	for (let i = 0; i < points.length - 1; i++) {
+		const point = points[i];
+		const next = points[i + 1];
+
+		if (point.x === next.x && point.y === next.y) {
+			points.splice(i, 1);
+			i--;
+		}
+	}
+
 	return points;
 }
 
@@ -332,6 +343,7 @@ export default class TetrisIldaRenderer {
 	private _scroller: ScrollTextGroup;
 	private _dac: DAC;
 	private _lastTime = 0;
+	private _score = 0;
 
 	private _state: IGameState;
 	private _stackGroups: Array<IPoint[]> = [];
@@ -373,17 +385,11 @@ export default class TetrisIldaRenderer {
 	}
 
 	public async start(tetris: Tetris) {
-		tetris.on('land', () => {
-			this.updateStackGroups(tetris);
-		});
-
-		tetris.on('removeBegin', () => {
-			this.updateStackGroups(tetris);
-		});
-
-		tetris.on('removeComplete', () => {
-			this.updateStackGroups(tetris);
-		});
+		tetris.on('death', (score: number) => { this._score = score; });
+		tetris.on('begin', () => { this._stackGroups = []; this._score = 0; });
+		tetris.on('land', () => { this.updateStackGroups(tetris); });
+		tetris.on('removeBegin', () => { this.updateStackGroups(tetris); });
+		tetris.on('removeComplete', () => { this.updateStackGroups(tetris); });
 
 		await this._dac.start();
 		
@@ -401,14 +407,14 @@ export default class TetrisIldaRenderer {
 	}
 
 	private renderGreets(dt: number) {
-		/*this._scene.add(new HersheyFont({
+		this._scene.add(new HersheyFont({
 			font,
 			text: 'GREETS',
-			x: 0.3,
+			x: 0.25,
 			y: 0.2,
 			color: [1, 0, 0],
 			charWidth: 0.04,
-		}));*/
+		}));
 
 		const chars = this._scroller.render(dt);
 		for (const char of chars) {
@@ -417,7 +423,7 @@ export default class TetrisIldaRenderer {
 	}
 
 	private renderGame(tetris: Tetris, dt: number) {
-		this.drawStack(tetris);
+		this.drawStack();
 
 		if (tetris.state.removeCountdown > 0) {
 			this.drawRemoving(tetris);
@@ -464,24 +470,82 @@ export default class TetrisIldaRenderer {
 		}));
 	}
 	
-	private renderGameOver(dt: number) {
-		const SHRINK_DURATION = 2;
-		const GAME_OVER_DURATION = 2;
+	private renderGameOver(tetris: Tetris, dt: number) {
+		const SHRINK_DURATION = 0.65;
+		const GAME_OVER_DURATION = 3.5;
+		const SCORE_DURATION = 4.0;
+
+		function isHorizontal(point1: IPoint, point2: IPoint): boolean {
+			return point1.x === point2.x;
+		}
 
 		if (this._state.stageTime < SHRINK_DURATION) {
+			const topFrac = (this._state.stageTime / SHRINK_DURATION) * 0.5;
+			const bottomFrac = 1 - topFrac;
 
-		} else {
+			const topY = tetris.size.h * topFrac;
+			const bottomY = tetris.size.h * bottomFrac;
+
+			for (const group of this._stackGroups) {
+				for (let i = 0; i < group.length - 1; i++) {
+					const point1 = group[i];
+					const point2 = group[i + 1];
+
+					if (point1.y < topY) {
+						point1.y = topY;
+					}
+
+					if (point2.y < topY) {
+						point2.y = topY;
+					}
+
+					if (point1.y > bottomY) {
+						point1.y = bottomY;
+					}
+
+					if (point2.y > bottomY) {
+						point2.y = bottomY;
+					}
+				}
+			}
+
+			this.drawStack();
+
+			this._scene.add(new Line({ from: { x: 0, y: topFrac }, to: { x: 1, y: topFrac }, color: [1, 0, 0], blankBefore: true }));
+			this._scene.add(new Line({ from: { x: 0, y: bottomFrac }, to: { x: 1, y: bottomFrac }, color: [1, 0, 0], blankBefore: true }));
+		
+		} else if (this._state.stageTime < GAME_OVER_DURATION) {
+			this._stackGroups = [];
+
 			this._scene.add(new HersheyFont({ 
 				font,
 				text: 'GAME OVER',
-				x: 0.2,
+				x: 0.15,
 				y: 0.5,
+				color: [1, 0, 0],
+				charWidth: 0.04,
+			}));
+		} else {
+			this._scene.add(new HersheyFont({ 
+				font,
+				text: 'SCORE',
+				x: 0.3,
+				y: 0.25,
+				color: [1, 0, 0],
+				charWidth: 0.04,
+			}));
+
+			this._scene.add(new HersheyFont({ 
+				font,
+				text: this._score.toString(),
+				x: 0.3,
+				y: 0.6,
 				color: [1, 0, 0],
 				charWidth: 0.04,
 			}));
 		}
 
-		if (this._state.stageTime > GAME_OVER_DURATION + SHRINK_DURATION) {
+		if (this._state.stageTime > GAME_OVER_DURATION + SHRINK_DURATION + SCORE_DURATION) {
 			this._state.stage = GameStage.Greets;
 			this._state.stageTime = 0;
 		}
@@ -500,7 +564,7 @@ export default class TetrisIldaRenderer {
 				break;
 			}
 			case GameStage.GameOver: {
-				this.renderGameOver(dt);
+				this.renderGameOver(tetris, dt);
 				break;
 			}
 			case GameStage.Greets: {
@@ -626,7 +690,7 @@ export default class TetrisIldaRenderer {
 		}
 	}
 
-	private drawStack(tetris: Tetris) {
+	private drawStack() {
 		for (const group of this._stackGroups) {
 			this.drawLines(group, STACK_COLOR, DEFAULT_OFFSET);
 		}

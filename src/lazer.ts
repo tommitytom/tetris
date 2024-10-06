@@ -131,6 +131,8 @@ tetris.on('rotate', () =>{
 
 tetris.on('land', () =>{
     if (ENABLE_SFX) {
+        sfxLand.currentTime = 0;
+        sfxLand.playing = false;
         sfxLand.play();
     }
     if (midiOutput) {

@@ -299,7 +299,7 @@ export default class Tetris extends EventEmitter {
 				this.emit('land');
 			}
 		} else {
-			this.emit('death');
+			this.emit('death', this._state.score);
 			this.stop();
 		}
 
