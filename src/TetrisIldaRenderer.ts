@@ -266,7 +266,7 @@ class ScrollText {
 		for (let i = 0; i < this._text.length; i++) {
 			const xPos = this._position + i * this._spacing;
 
-			if (xPos > -this._spacing && xPos < 1) {
+			if (xPos > 0 && xPos < 1 - this._spacing) {
 				const col = hslToRgb(xPos, 1, 0.5);
 				const phase = xPos * Math.PI * 2;
 				const yPos = 0.5 + Math.sin(phase + this._phase) * 0.1;

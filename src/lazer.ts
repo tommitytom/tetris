@@ -18,7 +18,7 @@ const NOTE_ROTATE = 55;
 const NOTE_LAND = 56;
 const NOTE_CLEAR = 57;
 
-const osc = new Client('192.168.0.130', 3333);
+const osc = new Client('192.168.0.170', 3333);
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -112,7 +112,7 @@ tetris.on('begin', () =>{
         bgm.play();
         sfxStart.play();
     }
-    osc.send('/SCENE/0', 1);
+    osc.send('/tetris/begin', 1);
 });
 
 tetris.on('rotate', () =>{
@@ -126,7 +126,7 @@ tetris.on('rotate', () =>{
         midiOutput.sendMessage([144,NOTE_ROTATE,127])
     }
 
-    osc.send('/SCENE/0', 1);
+    osc.send('/tetris/rotate', 1);
 });
 
 tetris.on('land', () =>{
@@ -138,7 +138,7 @@ tetris.on('land', () =>{
     if (midiOutput) {
         midiOutput.sendMessage([144,NOTE_LAND,127])
     }
-    osc.send('/SCENE/0', 1);
+    osc.send('/tetris/land', 1);
 });
 
 tetris.on('death', () =>{
@@ -148,7 +148,7 @@ tetris.on('death', () =>{
         bgm.playing = false;
         bgm.currentTime = 0;
     }
-    osc.send('/SCENE/0', 1);
+    osc.send('/tetris/death', 1);
 });
 
 tetris.on('removeBegin', (amount: number) => {
@@ -160,11 +160,21 @@ tetris.on('removeBegin', (amount: number) => {
         midiOutput.sendMessage([144,NOTE_CLEAR,127])
     }
     
-    osc.send('/SCENE/2', 1);
     osc.send('/tetris/removeBegin', amount);
 });
 
 tetris.on('removeComplete', (amount: number) => {
-    osc.send('/SCENE/1', 1);
     osc.send('/tetris/removeComplete', amount);
+});
+
+tetris.on('next', (type: number) => {
+    switch (type) {
+        case 0: osc.send('/tetris/next/o', 1); break;
+        case 1: osc.send('/tetris/next/t', 1); break;
+        case 2: osc.send('/tetris/next/z', 1); break;
+        case 3: osc.send('/tetris/next/s', 1); break;
+        case 4: osc.send('/tetris/next/j', 1); break;
+        case 5: osc.send('/tetris/next/l', 1); break;
+        case 6: osc.send('/tetris/next/i', 1); break;
+    }
 });

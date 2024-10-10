@@ -355,6 +355,7 @@ export default class Tetris extends EventEmitter {
 		this._updateCollisionPoint();
 
 		this.emit('removeComplete', removals.length);
+		this.emit('next', this._state.next.typeIdx);
 	}
 
 	// Shift rows down from the specified row index
