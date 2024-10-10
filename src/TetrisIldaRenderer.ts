@@ -521,28 +521,28 @@ export default class TetrisIldaRenderer {
 			this._scene.add(new HersheyFont({ 
 				font,
 				text: 'GAME OVER',
-				x: 0.15,
-				y: 0.5,
+				x: 0.15 * GRID_SCALE,
+				y: 0.5 * GRID_SCALE,
 				color: [1, 0, 0],
-				charWidth: 0.04,
+				charWidth: 0.04 * GRID_SCALE,
 			}));
 		} else {
 			this._scene.add(new HersheyFont({ 
 				font,
 				text: 'SCORE',
-				x: 0.3,
-				y: 0.25,
+				x: 0.3 * GRID_SCALE,
+				y: 0.25 * GRID_SCALE,
 				color: [1, 0, 0],
-				charWidth: 0.04,
+				charWidth: 0.04 * GRID_SCALE,
 			}));
 
 			this._scene.add(new HersheyFont({ 
 				font,
 				text: this._score.toString(),
-				x: 0.3,
-				y: 0.6,
+				x: 0.3 * GRID_SCALE,
+				y: 0.6 * GRID_SCALE,
 				color: [1, 0, 0],
-				charWidth: 0.04,
+				charWidth: 0.04 * GRID_SCALE,
 			}));
 		}
 
