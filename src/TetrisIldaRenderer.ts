@@ -19,6 +19,7 @@ const FPS = 120;
 const POINT_RATE = 30000;
 const STACK_COLOR: Color = [1, 1, 1];
 const GRID_SCALE = 0.5;
+const GRID_OFFSET = (1 - GRID_SCALE) / 2;
 
 enum Direction {
 	Up = 0,
@@ -273,10 +274,10 @@ class ScrollText {
 				chars.push(new HersheyFont({ 
 					font,
 					text: this._text[i],
-					x: this._position + i * this._spacing,
-					y: yPos,
+					x: this._position + i * this._spacing * GRID_SCALE,
+					y: yPos * GRID_SCALE,
 					color: col,
-					charWidth: this._charWidth,
+					charWidth: this._charWidth * GRID_SCALE,
 				}));
 			}
 		}
@@ -411,8 +412,8 @@ export default class TetrisIldaRenderer {
 		this._scene.add(new HersheyFont({
 			font,
 			text: 'GREETS',
-			x: 0.25 * GRID_SCALE,
-			y: 0.2 * GRID_SCALE,
+			x: 0.25 * GRID_SCALE + GRID_OFFSET,
+			y: 0.2 * GRID_SCALE + GRID_OFFSET,
 			color: [1, 0, 0],
 			charWidth: 0.04 * GRID_SCALE,
 		}));
@@ -455,8 +456,8 @@ export default class TetrisIldaRenderer {
 		this._scene.add(new HersheyFont({ 
 			font,
 			text: 'TETRIS',
-			x: 0.3 * GRID_SCALE,
-			y: 0.5 * GRID_SCALE,
+			x: 0.3 * GRID_SCALE + GRID_OFFSET,
+			y: 0.5 * GRID_SCALE + GRID_OFFSET,
 			color: [1, 0, 0],
 			charWidth: 0.04 * GRID_SCALE,
 		}));
@@ -464,8 +465,8 @@ export default class TetrisIldaRenderer {
 		this._scene.add(new HersheyFont({ 
 			font,
 			text: 'Press enter to play',
-			x: 0.2 * GRID_SCALE,
-			y: 0.4 * GRID_SCALE,
+			x: 0.2 * GRID_SCALE + GRID_OFFSET,
+			y: 0.4 * GRID_SCALE + GRID_OFFSET,
 			color: [1, 0, 0],
 			charWidth: 0.02 * GRID_SCALE,
 		}));
@@ -521,8 +522,8 @@ export default class TetrisIldaRenderer {
 			this._scene.add(new HersheyFont({ 
 				font,
 				text: 'GAME OVER',
-				x: 0.15 * GRID_SCALE,
-				y: 0.5 * GRID_SCALE,
+				x: 0.15 * GRID_SCALE + GRID_OFFSET,
+				y: 0.5 * GRID_SCALE + GRID_OFFSET,
 				color: [1, 0, 0],
 				charWidth: 0.04 * GRID_SCALE,
 			}));
@@ -530,8 +531,8 @@ export default class TetrisIldaRenderer {
 			this._scene.add(new HersheyFont({ 
 				font,
 				text: 'SCORE',
-				x: 0.3 * GRID_SCALE,
-				y: 0.25 * GRID_SCALE,
+				x: 0.3 * GRID_SCALE + GRID_OFFSET,
+				y: 0.25 * GRID_SCALE + GRID_OFFSET,
 				color: [1, 0, 0],
 				charWidth: 0.04 * GRID_SCALE,
 			}));
@@ -539,8 +540,8 @@ export default class TetrisIldaRenderer {
 			this._scene.add(new HersheyFont({ 
 				font,
 				text: this._score.toString(),
-				x: 0.3 * GRID_SCALE,
-				y: 0.6 * GRID_SCALE,
+				x: 0.3 * GRID_SCALE + GRID_OFFSET,
+				y: 0.6 * GRID_SCALE + GRID_OFFSET,
 				color: [1, 0, 0],
 				charWidth: 0.04 * GRID_SCALE,
 			}));
@@ -743,12 +744,12 @@ export default class TetrisIldaRenderer {
 
 			this._scene.add(new Line({ 
 				from: { 
-					x: line.x * bs + offset.x, 
-					y: line.y * bs + offset.y 
+					x: line.x * bs + offset.x + GRID_OFFSET, 
+					y: line.y * bs + offset.y + GRID_OFFSET 
 				}, 
 				to: { 
-					x: next.x * bs + offset.x,
-					y: next.y * bs + offset.y
+					x: next.x * bs + offset.x + GRID_OFFSET,
+					y: next.y * bs + offset.y + GRID_OFFSET
 				}, 
 				color,
 				blankBefore: i === 0}
