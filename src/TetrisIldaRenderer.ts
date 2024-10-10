@@ -1,4 +1,4 @@
-import { DAC } from '@laser-dac/core';
+import { DAC, Point } from '@laser-dac/core';
 import { HersheyFont, Line, loadHersheyFont, Rect, Scene } from '@laser-dac/draw';
 import { Helios } from '@laser-dac/helios';
 import { Simulator } from '@laser-dac/simulator';
@@ -15,11 +15,13 @@ const font = loadHersheyFont(path.resolve(__dirname, '../assets/futural2.jhf'));
 
 const DEFAULT_OFFSET = { x: 0, y: 0 };
 const REMOVAL_FLASH_RATE = 0.2; // Lower values make the flashing faster
-const FPS = 120;
-const POINT_RATE = 30000;
+const FPS = 30;
+const POINT_RATE = 35000;
+const RESOLUTION = 1500;
 const STACK_COLOR: Color = [1, 1, 1];
-const GRID_SCALE = 0.5;
+const GRID_SCALE = 0.15;
 const GRID_OFFSET = (1 - GRID_SCALE) / 2;
+const FLIP_X = true;
 
 enum Direction {
 	Up = 0,
@@ -266,16 +268,16 @@ class ScrollText {
 		for (let i = 0; i < this._text.length; i++) {
 			const xPos = this._position + i * this._spacing;
 
-			if (xPos > 0 && xPos < 1 - this._spacing) {
+			if (xPos > 0 && xPos < 1) {
 				const col = hslToRgb(xPos, 1, 0.5);
-				const phase = xPos * Math.PI * 2;
+				const phase = xPos * Math.PI * 4;
 				const yPos = 0.5 + Math.sin(phase + this._phase) * 0.1;
 
 				chars.push(new HersheyFont({ 
 					font,
 					text: this._text[i],
-					x: this._position + i * this._spacing * GRID_SCALE,
-					y: yPos * GRID_SCALE,
+					x: xPos * GRID_SCALE + GRID_OFFSET,
+					y: yPos * GRID_SCALE + GRID_OFFSET,
 					color: col,
 					charWidth: this._charWidth * GRID_SCALE,
 				}));
@@ -337,6 +339,22 @@ class ScrollTextGroup {
 	}
 }
 
+function flipX(points: Point[]): Point[] {
+	if (FLIP_X) {
+		return points.map(v => { 
+			return { 
+				x: 1 - v.x, 
+				y: v.y,
+				r: v.r,
+				g: v.g,
+				b: v.b
+			};
+		});
+	}
+	
+	return points;
+}
+
 export default class TetrisIldaRenderer {
 	private _scene: Scene;
 	private _blockSize: number;
@@ -357,7 +375,7 @@ export default class TetrisIldaRenderer {
  		this._dac.use(new Simulator());
 		this._dac.use(new Helios());
 
-		this._scene = new Scene();
+		this._scene = new Scene({ resolution: RESOLUTION });
 		this._scroller = new ScrollTextGroup();
 
 		for (const greet of GREETS) {
@@ -416,11 +434,11 @@ export default class TetrisIldaRenderer {
 			y: 0.2 * GRID_SCALE + GRID_OFFSET,
 			color: [1, 0, 0],
 			charWidth: 0.04 * GRID_SCALE,
-		}));
+		}), flipX);
 
 		const chars = this._scroller.render(dt);
 		for (const char of chars) {
-			this._scene.add(char);
+			this._scene.add(char, flipX);
 		}
 	}
 
@@ -448,7 +466,7 @@ export default class TetrisIldaRenderer {
 				y: 0.5,
 				color: [1, 0, 0],
 				charWidth: 0.04,
-			}));
+			}), flipX);
 		}
 	}
 
@@ -460,7 +478,7 @@ export default class TetrisIldaRenderer {
 			y: 0.5 * GRID_SCALE + GRID_OFFSET,
 			color: [1, 0, 0],
 			charWidth: 0.04 * GRID_SCALE,
-		}));
+		}), flipX);
 
 		this._scene.add(new HersheyFont({ 
 			font,
@@ -469,7 +487,7 @@ export default class TetrisIldaRenderer {
 			y: 0.4 * GRID_SCALE + GRID_OFFSET,
 			color: [1, 0, 0],
 			charWidth: 0.02 * GRID_SCALE,
-		}));
+		}), flipX);
 	}
 	
 	private renderGameOver(tetris: Tetris, dt: number) {
@@ -513,8 +531,8 @@ export default class TetrisIldaRenderer {
 
 			this.drawStack();
 
-			this._scene.add(new Line({ from: { x: 0, y: topFrac }, to: { x: 1, y: topFrac }, color: [1, 0, 0], blankBefore: true }));
-			this._scene.add(new Line({ from: { x: 0, y: bottomFrac }, to: { x: 1, y: bottomFrac }, color: [1, 0, 0], blankBefore: true }));
+			this._scene.add(new Line({ from: { x: GRID_OFFSET, y: topFrac * GRID_SCALE + GRID_OFFSET }, to: { x: GRID_SCALE + GRID_OFFSET, y: topFrac * GRID_SCALE + GRID_OFFSET }, color: [1, 0, 0], blankBefore: true }), flipX);
+			this._scene.add(new Line({ from: { x: GRID_OFFSET, y: bottomFrac * GRID_SCALE + GRID_OFFSET }, to: { x: GRID_SCALE + GRID_OFFSET, y: bottomFrac * GRID_SCALE + GRID_OFFSET }, color: [1, 0, 0], blankBefore: true }), flipX);
 		
 		} else if (this._state.stageTime < GAME_OVER_DURATION) {
 			this._stackGroups = [];
@@ -526,7 +544,7 @@ export default class TetrisIldaRenderer {
 				y: 0.5 * GRID_SCALE + GRID_OFFSET,
 				color: [1, 0, 0],
 				charWidth: 0.04 * GRID_SCALE,
-			}));
+			}), flipX);
 		} else {
 			this._scene.add(new HersheyFont({ 
 				font,
@@ -535,7 +553,7 @@ export default class TetrisIldaRenderer {
 				y: 0.25 * GRID_SCALE + GRID_OFFSET,
 				color: [1, 0, 0],
 				charWidth: 0.04 * GRID_SCALE,
-			}));
+			}), flipX);
 
 			this._scene.add(new HersheyFont({ 
 				font,
@@ -544,7 +562,7 @@ export default class TetrisIldaRenderer {
 				y: 0.6 * GRID_SCALE + GRID_OFFSET,
 				color: [1, 0, 0],
 				charWidth: 0.04 * GRID_SCALE,
-			}));
+			}), flipX);
 		}
 
 		if (this._state.stageTime > GAME_OVER_DURATION + SHRINK_DURATION + SCORE_DURATION) {
@@ -722,7 +740,13 @@ export default class TetrisIldaRenderer {
 		groups.push({ start, size: current - start + 1 });
 
 		for (const group of groups) {
-			this._scene.add(new Rect({ x: 0, y: group.start * this._blockSize, width: tetris.size.w * this._blockSize, height: group.size * this._blockSize, color: [1, 0, 0] }));
+			this._scene.add(new Rect({ 
+				x: GRID_OFFSET, 
+				y: group.start * this._blockSize * GRID_SCALE + GRID_OFFSET, 
+				width: tetris.size.w * this._blockSize * GRID_SCALE, 
+				height: group.size * this._blockSize * GRID_SCALE, 
+				color: [1, 0, 0] 
+			}), flipX);
 		}
 	}
 
@@ -753,7 +777,7 @@ export default class TetrisIldaRenderer {
 				}, 
 				color,
 				blankBefore: i === 0}
-			));
+			), flipX);
 		}
 	}
 /*
