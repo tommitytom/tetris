@@ -18,6 +18,7 @@ const REMOVAL_FLASH_RATE = 0.2; // Lower values make the flashing faster
 const FPS = 120;
 const POINT_RATE = 30000;
 const STACK_COLOR: Color = [1, 1, 1];
+const GRID_SCALE = 0.5;
 
 enum Direction {
 	Up = 0,
@@ -350,12 +351,12 @@ export default class TetrisIldaRenderer {
 
 	constructor(w, h) {
 		this._gridSize = { w: w, h: h };
-		this._blockSize = 1 / h;
+		this._blockSize = (1 / h) * GRID_SCALE;
 		this._dac = new DAC();
  		this._dac.use(new Simulator());
 		this._dac.use(new Helios());
 
-		this._scene = new Scene({});
+		this._scene = new Scene();
 		this._scroller = new ScrollTextGroup();
 
 		for (const greet of GREETS) {
@@ -410,10 +411,10 @@ export default class TetrisIldaRenderer {
 		this._scene.add(new HersheyFont({
 			font,
 			text: 'GREETS',
-			x: 0.25,
-			y: 0.2,
+			x: 0.25 * GRID_SCALE,
+			y: 0.2 * GRID_SCALE,
 			color: [1, 0, 0],
-			charWidth: 0.04,
+			charWidth: 0.04 * GRID_SCALE,
 		}));
 
 		const chars = this._scroller.render(dt);
@@ -454,19 +455,19 @@ export default class TetrisIldaRenderer {
 		this._scene.add(new HersheyFont({ 
 			font,
 			text: 'TETRIS',
-			x: 0.3,
-			y: 0.5,
+			x: 0.3 * GRID_SCALE,
+			y: 0.5 * GRID_SCALE,
 			color: [1, 0, 0],
-			charWidth: 0.04,
+			charWidth: 0.04 * GRID_SCALE,
 		}));
 
 		this._scene.add(new HersheyFont({ 
 			font,
 			text: 'Press enter to play',
-			x: 0.2,
-			y: 0.4,
+			x: 0.2 * GRID_SCALE,
+			y: 0.4 * GRID_SCALE,
 			color: [1, 0, 0],
-			charWidth: 0.02,
+			charWidth: 0.02 * GRID_SCALE,
 		}));
 	}
 	
